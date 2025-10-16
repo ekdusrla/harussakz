@@ -1,15 +1,10 @@
-import { Text, View } from "react-native";
+import { Redirect } from "expo-router";
 
 export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>희희희</Text>
-    </View>
+    <Redirect href={{
+      pathname: "/(tabs)/home",
+    }}
+    />
   );
 }
