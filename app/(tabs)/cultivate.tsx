@@ -221,9 +221,9 @@ const styles = StyleSheet.create({
     fontFamily: "NanumSquareNeo-Bd",
   	},
     view2: {
-    		top: 40,
-    		boxShadow: "2px 2px 12px rgba(158, 164, 169, 0.25)",
-    		shadowColor: "rgba(158, 164, 169, 0.25)",
+    		top: 44,
+    		boxShadow: "2px 2px 12px rgba(218, 222, 225, 0.25)",
+    		shadowColor: "rgba(218, 222, 225, 0.25)",
     		shadowOffset: {
       			width: 2,
       			height: 2

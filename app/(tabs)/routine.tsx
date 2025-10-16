@@ -322,9 +322,9 @@ const styles = StyleSheet.create({
     		position: "absolute"
   	},
   	view2: {
-    		top: 40,
-    		boxShadow: "2px 2px 12px rgba(158, 164, 169, 0.25)",
-    		shadowColor: "rgba(158, 164, 169, 0.25)",
+    		top: 44,
+    		boxShadow: "2px 2px 12px rgba(218, 222, 225, 0.25)",
+    		shadowColor: "rgba(218, 222, 225, 0.25)",
     		shadowOffset: {
       			width: 2,
       			height: 2
@@ -357,10 +357,10 @@ const styles = StyleSheet.create({
   	},
     item22: {
       position: "absolute",
-    		width: 40,
-    		height: 40,
+    		width: 44,
+    		height: 44,
         left: 340,
-        bottom: 736
+        bottom: 726
         
   	},
   	view3: {

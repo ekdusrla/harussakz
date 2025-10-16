@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function Achieve() {
 
@@ -75,17 +75,30 @@ const cards = [
                   <View style={[styles.view3, styles.viewFlexBox2]}>
                     <Text style={styles.text15}>1234 개</Text>
                   </View>
+                    <Pressable
+                    onPress={() => router.push("/login")} hitSlop={10}
+                    style={[
+                        styles.item0,
+                        { zIndex: 10 },
+                    ]}
+                    >
+                    <Image
+                        source={require("../../assets/images/icon-menu.png")}
+                        resizeMode="contain"
+                        style={{ width: 44, height: 44 }}
+                    />
+                    </Pressable>
               </View>
 
               {/* 탭 버튼 Row */}
               <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 0 }}>
                 <TouchableOpacity onPress={() => setActiveTab("achieve")} style={{ position: "absolute", left: 64, top: 140, zIndex: 10 }}>
-                  <Text style={[{ fontSize: 24, fontWeight: "600", color: "#9ea4a9", fontFamily:"NanumSquareNeo-Bd" }, activeTab === "achieve" && { color: "#464b53" }]}>
+                  <Text style={[{ fontSize: 24, fontWeight: "600", color: "#9ea4a9", fontFamily:"NanumSquareNeo-Rg" }, activeTab === "achieve" && { color: "#464b53" }]}>
                     업적 도감
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setActiveTab("plant")} style={{ position: "absolute", right:64, top: 140, zIndex: 10 }}>
-                  <Text style={[{ fontSize: 24, fontWeight: "600", color: "#9ea4a9", fontFamily:"NanumSquareNeo-Bd" }, activeTab === "plant" && { color: "#464b53" }]}>
+                  <Text style={[{ fontSize: 24, fontWeight: "600", color: "#9ea4a9", fontFamily:"NanumSquareNeo-Rg" }, activeTab === "plant" && { color: "#464b53" }]}>
                     식물 도감
                   </Text>
                 </TouchableOpacity>
@@ -312,12 +325,12 @@ noBarIcon: {
   // 위치는 inline style에서 absolute로 지정
 },
 view2: {
-    top: 40,
+    top: 44,
     left: 20, // 화면 왼쪽에서 약간 띄우기
     position: "absolute",
     zIndex: 10, // 최상단으로
-    boxShadow: "2px 2px 12px rgba(158, 164, 169, 0.25)",
-    shadowColor: "rgba(158, 164, 169, 0.25)",
+    boxShadow: "2px 2px 12px rgba(218, 222, 225, 0.25)",
+    shadowColor: "rgba(218, 222, 225, 0.25)",
     shadowOffset: { width: 2, height: 2 },
     shadowRadius: 12,
     elevation: 12,
@@ -378,5 +391,10 @@ card: {
   },
   scroll:{
     marginTop: -500
-  }
+  },
+      item0: {
+        position: "absolute",
+        left : 319,
+        top : -10
+  	},
 });
