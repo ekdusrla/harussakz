@@ -35,14 +35,18 @@ useEffect(() => {
     }, 5000);
   };
 
-  // 1️⃣ 화면 켜자마자 실행
-  showImage();
+  // 5초 뒤 첫 실행
+  const initialTimeout = setTimeout(showImage, 10000);
 
-  // 2️⃣ 이후 10초마다 반복
+  // 이후 10초마다 반복
   const interval = setInterval(showImage, 10000);
 
-  return () => clearInterval(interval);
+  return () => {
+    clearTimeout(initialTimeout);
+    clearInterval(interval);
+  };
 }, []);
+
 
 
 
