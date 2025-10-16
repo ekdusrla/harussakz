@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     		width: 44,
     		height: 44,
         left: 340,
-        bottom: 72
+        top: -770
         
   	},
   	view3: {

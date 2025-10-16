@@ -1,10 +1,12 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useAuth } from "../context/AuthContext";
 
 const SERVER_IP = "http://3.37.215.53:8080";
 
 export default function Login() {
+  const { setToken } = useAuth(); // ✅ 컴포넌트 안에서 호출
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,42 +16,40 @@ export default function Login() {
   const router = useRouter();
 
   const handleLogin = async () => {
-  setShowWarning(true);
-  if (!email || !password) return;
+    setShowWarning(true);
+    if (!email || !password) return;
 
-  setLoading(true);
-  try {
-    const res = await fetch(`${SERVER_IP}/users/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim().toLowerCase(), password })
-    });
-
-    const text = await res.text();
-    console.log("로그인 서버 응답:", text); // 서버에서 실제 반환값 확인
-    let data: any = {};
+    setLoading(true);
     try {
-      data = JSON.parse(text);
-    } catch {
-      data = { token: null, memberId: null, message: text };
+      const res = await fetch(`${SERVER_IP}/users/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      });
+
+      const text = await res.text();
+      console.log("로그인 서버 응답:", text); // 서버에서 실제 반환값 확인
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { token: null, memberId: null, message: text };
+      }
+
+      if (res.ok && data.accessToken) {
+        console.log("로그인 성공, 토큰:", data.accessToken);
+        setToken(data.accessToken); // ✅ 토큰 Context에 저장
+        router.replace("/home");
+      } else {
+        alert("로그인 실패: " + (data.message || "이메일 또는 비밀번호를 확인하세요."));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("로그인 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
     }
-
-if (res.ok && data.accessToken) {
-  console.log("로그인 성공, 토큰:", data.accessToken);
-  // 토큰 저장 가능: AsyncStorage, Context 등
-  router.replace("/home");
-} else {
-  alert("로그인 실패: " + (data.message || "이메일 또는 비밀번호를 확인하세요."));
-}
-
-  } catch (err) {
-    console.error(err);
-    alert("로그인 중 오류가 발생했습니다.");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <View style={styles.view}>

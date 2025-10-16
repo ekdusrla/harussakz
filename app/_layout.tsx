@@ -1,3 +1,4 @@
+import { AuthProvider } from '@/context/AuthContext';
 import { useFonts } from 'expo-font';
 import { Stack } from "expo-router";
 
@@ -21,5 +22,11 @@ export default function RootLayout() {
       if (!fontsLoaded) return null;
 
 
-  return <Stack screenOptions={{headerShown : false}}/>;
+return (
+      <AuthProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </AuthProvider>
+
+);
+
 }
