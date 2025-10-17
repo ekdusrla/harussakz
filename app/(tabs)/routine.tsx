@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../../context/AuthContext";
 
 type DateObj = {
   date: number;
@@ -9,6 +10,7 @@ type DateObj = {
 };
 
 export default function Routine() {
+  const { token } = useAuth();
   const router = useRouter();
   const today = new Date().getDate();
   const todayWeekday = new Date().getDay();
@@ -27,13 +29,10 @@ export default function Routine() {
     return d.getDate();
   });
 
-  const routines = [
-    "도서 30분 읽기",
-    "오후 10시에 잠들기 (성장 1단계)",
-    "산책 1시간 하기",
+  const growthRoutines = [
+    "산책하기 (성장 1단계)",
     "오전 9시에 일어나기 (성장 2단계)",
-    "유산균 섭취",
-    "쾌변하기 (성장 3단계)",
+    "아침에 쾌변하기 (성장 3단계)",
     "오늘도 우렁차게 살아남기 (성장 4단계)"
   ];
 
@@ -44,7 +43,7 @@ export default function Routine() {
     require("../../assets/images/icon-greencheck.png")
   ];
 
-  const [checkedImages, setCheckedImages] = useState<(number | null)[]>(Array(routines.length).fill(null));
+  const [checkedImages, setCheckedImages] = useState<(number | null)[]>([]);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupImage, setPopupImage] = useState<number | null>(null);
   const [popupTitle, setPopupTitle] = useState("");
@@ -61,18 +60,54 @@ export default function Routine() {
     year: todayYear
   });
 
+  const [serverRoutines, setServerRoutines] = useState<{ id: number; routine: string; completed: boolean }[]>([]);
+
   const handleDatePress = (d: DateObj) => {
     setSelectedDateObj(d);
   };
 
+  // 서버에서 날짜별 루틴 가져오기
+  useEffect(() => {
+  const fetchRoutines = async () => {
+    if (!token) return;
+
+    try {
+      const dateStr = `${selectedDateObj.year}-${String(selectedDateObj.month).padStart(2,'0')}-${String(selectedDateObj.date).padStart(2,'0')}`;
+      const res = await fetch(`http://3.37.215.53:8080/routines/by-date/${dateStr}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "*/*",
+        },
+      });
+
+      const data = await res.json();
+
+      const routinesArr = Array.isArray(data) ? data : [];
+      setServerRoutines(routinesArr);
+
+      // 체크 상태 초기화
+      setCheckedImages([...growthRoutines, ...routinesArr.map(r => r.routine)].map(() => null));
+
+    } catch (e) {
+      console.error("루틴 조회 실패", e);
+      setServerRoutines([]);
+      setCheckedImages([...growthRoutines].map(() => null));
+    }
+  };
+
+  fetchRoutines();
+}, [selectedDateObj, token]);
+
+const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
+
+
+
   const toggleCheck = (index: number) => {
     const newCheckedImages = [...checkedImages];
-    const isGrowthRoutine = [
-      "오후 10시에 잠들기 (성장 1단계)",
-      "오전 9시에 일어나기 (성장 2단계)",
-      "쾌변하기 (성장 3단계)",
-      "오늘도 우렁차게 살아남기 (성장 4단계)"
-    ].includes(routines[index]);
+    const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
+    const routineName = allRoutines[index];
+
+    const isGrowthRoutine = growthRoutines.includes(routineName);
 
     if (!newCheckedImages[index]) {
       newCheckedImages[index] = checkImages[Math.floor(Math.random() * checkImages.length)];
@@ -105,34 +140,29 @@ export default function Routine() {
     } else {
       setPrePopupVisible(false);
       if (nextPopupIndex !== null) {
-        const index = nextPopupIndex;
-        if (routines[index] === "오후 10시에 잠들기 (성장 1단계)") {
+        const routineName = [...growthRoutines, ...serverRoutines.map(r => r.routine)][nextPopupIndex];
+        if (routineName === growthRoutines[0]) {
           setPopupImage(require("../../assets/images/growpopup1.png"));
           setPopupTitle("뿌리내린 새싹");
           setPopupMessage("처음으로 싹을 틔운 순간이에요!\n포기하지 않은 의지가 빛나고 있어요");
-          setPopupVisible(true);
-        }
-        if (routines[index] === "오전 9시에 일어나기 (성장 2단계)") {
+        } else if (routineName === growthRoutines[1]) {
           setPopupImage(require("../../assets/images/growpopup2.png"));
           setPopupTitle("흔들리지 않는 줄기");
           setPopupMessage("단단히 뿌리내리고 서 있는 순간이에요!\n흔들림 없는 노력이 든든한 힘이 되었어요");
-          setPopupVisible(true);
-        }
-        if (routines[index] === "쾌변하기 (성장 3단계)") {
+        } else if (routineName === growthRoutines[2]) {
           setPopupImage(require("../../assets/images/growpopup3.png"));
           setPopupTitle("피어나는 꽃봉오리");
           setPopupMessage("꽃이 맺히며 기대를 품고 있어요!\n정성과 열정이 아름답게 피어나려 해요");
-          setPopupVisible(true);
-        }
-        if (routines[index] === "오늘도 우렁차게 살아남기 (성장 4단계)") {
+        } else if (routineName === growthRoutines[3]) {
           setPopupImage(require("../../assets/images/growpopup4.png"));
           setPopupTitle("진실한 성취의 튤립");
           setPopupMessage("드디어 활짝 피어난 결실이에요!\n당신의 행동이 찬란한 성취로 이어졌어요");
-          setPopupVisible(true);
         }
+        setPopupVisible(true);
       }
     }
   };
+
 
   return (
     <View style={styles.safeareaview}>
@@ -145,190 +175,91 @@ export default function Routine() {
           {weekDates.map((date, index) => {
             const d: DateObj = { date, month: todayMonth, year: todayYear };
             const isToday = d.date === today && d.month === todayMonth && d.year === todayYear;
-            const isSelected =
-              selectedDateObj &&
-              d.date === selectedDateObj.date &&
-              d.month === selectedDateObj.month &&
-              d.year === selectedDateObj.year;
+            const isSelected = d.date === selectedDateObj.date && d.month === selectedDateObj.month && d.year === selectedDateObj.year;
 
             return (
               <View key={index} style={{ alignItems: "center" }}>
-                <Text
-                  style={[
-                    styles.weekdayText,
-                    index === 0 && { color: "#FF7C57" },
-                    index === 6 && { color: "#5E86DF" }
-                  ]}
-                >
-                  {weekDays[index]}
-                </Text>
+                <Text style={[styles.weekdayText, index === 0 && { color: "#FF7C57" }, index === 6 && { color: "#5E86DF" }]}>{weekDays[index]}</Text>
 
                 <Pressable onPress={() => handleDatePress(d)}>
-                  <View
-                    style={{
-                      justifyContent: "center",
-                      alignItems: "center",
-                      width: 36,
-                      height: 36
-                    }}
-                  >
-                    {isSelected && (
-                      <View
-                        style={{
-                          position: "absolute",
-                          width: 36,
-                          height: 36,
-                          borderRadius: 18,
-                          backgroundColor: "#91E04C",
-                          zIndex: -1
-                        }}
-                      />
-                    )}
-
-                    <Text
-                      style={{
-                        color: isSelected ? "#ffffff" : isToday ? "#91E04C" : "#74777D",
-                        fontWeight: "600",
-                        fontFamily: "NanumSquareNeo-Bd",
-                        fontSize: 20,
-                      }}
-                    >
-                      {d.date}
-                    </Text>
+                  <View style={{ justifyContent: "center", alignItems: "center", width: 36, height: 36 }}>
+                    {isSelected && <View style={{ position: "absolute", width: 36, height: 36, borderRadius: 18, backgroundColor: "#91E04C", zIndex: -1 }} />}
+                    <Text style={{ color: isSelected ? "#ffffff" : isToday ? "#91E04C" : "#74777D", fontWeight: "600", fontFamily: "NanumSquareNeo-Bd", fontSize: 20 }}>{d.date}</Text>
                   </View>
                 </Pressable>
 
-                {isToday && (
-                  <View
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: "#91E04C",
-                      marginTop: 4
-                    }}
-                  />
-                )}
+                {isToday && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#91E04C", marginTop: 4 }} />}
               </View>
             );
           })}
         </View>
 
-                            <Image
-                            style={styles.itemm} width={480} height={8}
-                            resizeMode="cover"
-                            source={require("../../assets/images/routinebar.png")}
-                          />
-                        <View style={[styles.view2, styles.viewFlexBox]}>
-                          <Image
-                            style={styles.item} width={20} height={14}
-                            resizeMode="contain"
-                            source={require("../../assets/images/icon-seed.png")}
-                          />
-                          <View style={[styles.view3, styles.viewFlexBox]}>
-                            <Text style={styles.text15}>1234 개</Text>
-                          </View>
-                        </View>
-                        <View style={{ marginTop: 58, marginHorizontal: 24 }}>
-                            {routines.map((routine, index) => (
-                                <Pressable
-                                key={index}
-                                onPress={() => toggleCheck(index)}
-                                style={{ flexDirection: "row", alignItems: "center", marginBottom: 22 }}
-                                >
-                                <Image
-                                    source={checkedImages[index] ?? require("../../assets/images/icon-nonecheck.png")}
-                                    style={{ width: 24, height: 24, marginRight: 12 }}
-                                    resizeMode="contain"
-                                />
-                                <Text
-                                style={{
-                                    fontSize: 16,
-                                    color: checkedImages[index] ? "#9EA4A9" : "#26282c",
-                                    fontWeight: "500",
-                                    fontFamily: "NanumSquareNeo-Rg",
-                                    textDecorationLine: checkedImages[index] ? "line-through" : "none" // 선택되면 줄 긋기
-                                }}>
-                                {routine}
-                                </Text>
+        <Image style={styles.itemm} width={480} height={8} resizeMode="cover" source={require("../../assets/images/routinebar.png")} />
+        <View style={[styles.view2, styles.viewFlexBox]}>
+          <Image style={styles.item} width={20} height={14} resizeMode="contain" source={require("../../assets/images/icon-seed.png")} />
+          <View style={[styles.view3, styles.viewFlexBox]}>
+            <Text style={styles.text15}>1234 개</Text>
+          </View>
+        </View>
+        <Pressable onPress={() => router.push("/login")} hitSlop={20} style={{zIndex: 10}}>
+          <Image style={styles.item22}  source={require("../../assets/images/icon-menu.png")} resizeMode="contain" />
+        </Pressable>
+        <View style={{ marginTop: 58, marginHorizontal: 24 }}>
+          {allRoutines.map((routine, index) => (
+            <Pressable key={index} onPress={() => toggleCheck(index)} style={{ flexDirection: "row", alignItems: "center", marginBottom: 22 }}>
+              <Image source={checkedImages[index] ?? require("../../assets/images/icon-nonecheck.png")} style={{ width: 24, height: 24, marginRight: 12 }} resizeMode="contain" />
+              <Text style={{ fontSize: 16, color: checkedImages[index] ? "#9EA4A9" : "#26282c", fontWeight: "500", fontFamily: "NanumSquareNeo-Rg", textDecorationLine: checkedImages[index] ? "line-through" : "none" }}>
+                {routine}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
-                                </Pressable>
-                            ))}
-                            </View>
-        				<Text style={[styles.myRoutine, styles.text19Typo]}>My Routine</Text>
-      			</View>
-                    <Pressable
-                    onPress={() => router.push("../generateroutine1")}
-                    style={{
-                        position: "absolute",
-                        bottom: 20,
-                        right: 20,
-                        width: 60,   // 터치 영역 확보
-                        height: 60,
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}
-                    >
-                    <Image
-                        source={require("../../assets/images/icon-add.png")}
-                        style={{
-                        width: 60,
-                        height: 60,
-                        resizeMode: "contain",
-                        }}
-                    />
-                    </Pressable>
-                    <Pressable onPress={() => router.push("/login")} hitSlop={10}>
-                      <Image
-                        style={styles.item22}
-                        source={require("../../assets/images/icon-menu.png")}
-                        resizeMode="contain"
-                      />
-                    </Pressable>
-                    {/* ✅ 팝업 모달 */}
-                    {/* 1. 사전 팝업 */}
-<Modal
-  transparent={true}
-  visible={prePopupVisible}
-  animationType="fade"
->
-  <View style={styles.popupOverlay}>
-    <Pressable style={styles.popupContainer} onPress={handlePrePopupPress}>
-      <Image
-        source={require("../../assets/images/prepopup.png")}
-        style={styles.prePopupImage}
-      />
-    <Animated.Text style={[styles.prePopupTitle, { opacity: textOpacity }]}>
-    {prePopupStep === 0 ? "두근두근" : "성장의 조짐이 보여요"}
-    </Animated.Text>
-      <Text style={styles.prePopupMessage}>화면을 클릭해주세요</Text>
-    </Pressable>
-  </View>
-</Modal>
-
-
-{/* 2. 기존 성장 팝업 */}
-<Modal
-  transparent={true}
-  visible={popupVisible}
-  animationType="fade"
-  onRequestClose={() => setPopupVisible(false)}
->
-  <View style={styles.popupOverlay}>
-    <View style={styles.popupContainer}>
-      <Image source={require("../../assets/images/tada.png")} style={styles.popupDecorationImage} />
-      {popupImage && (<Image source={popupImage} style={styles.popupMainImage} />)}
-      <Text style={styles.popupTitle}>{popupTitle}</Text>
-      <Text style={styles.popupMessage}>{popupMessage}</Text>
-      <Pressable style={styles.popupConfirmButton} onPress={() => setPopupVisible(false)}>
-        <Text style={styles.popupConfirmButtonText}>확인</Text>
+        <Text style={[styles.myRoutine, styles.text19Typo]}>My Routine</Text>
+              <Pressable
+        onPress={() => router.push("../generateroutine1")}
+        style={{
+          position: "absolute",
+          bottom: 20,
+          right: 20,
+          width: 60,
+          height: 60,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Image source={require("../../assets/images/icon-add.png")} style={{ width: 60, height: 60, resizeMode: "contain" }} />
       </Pressable>
+
+        {/* 팝업 모달 */}
+        <Modal transparent visible={prePopupVisible} animationType="fade">
+          <View style={styles.popupOverlay}>
+            <Pressable style={styles.popupContainer} onPress={handlePrePopupPress}>
+              <Image source={require("../../assets/images/prepopup.png")} style={styles.prePopupImage} />
+              <Animated.Text style={[styles.prePopupTitle, { opacity: textOpacity }]}>{prePopupStep === 0 ? "두근두근" : "성장의 조짐이 보여요"}</Animated.Text>
+              <Text style={styles.prePopupMessage}>화면을 클릭해주세요</Text>
+            </Pressable>
+          </View>
+        </Modal>
+
+        <Modal transparent visible={popupVisible} animationType="fade" onRequestClose={() => setPopupVisible(false)}>
+          <View style={styles.popupOverlay}>
+            <View style={styles.popupContainer}>
+              <Image source={require("../../assets/images/tada.png")} style={styles.popupDecorationImage} />
+              {popupImage && <Image source={popupImage} style={styles.popupMainImage} />}
+              <Text style={styles.popupTitle}>{popupTitle}</Text>
+              <Text style={styles.popupMessage}>{popupMessage}</Text>
+              <Pressable style={styles.popupConfirmButton} onPress={() => setPopupVisible(false)}>
+                <Text style={styles.popupConfirmButtonText}>확인</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      </View>
     </View>
-  </View>
-</Modal>
-    		</View>
-    );
+  );
 }
+
 
 const styles = StyleSheet.create({
   	safeareaview: {
@@ -410,7 +341,7 @@ const styles = StyleSheet.create({
     		width: 44,
     		height: 44,
         left: 340,
-        top: -770
+        top: -266
         
   	},
   	view3: {
