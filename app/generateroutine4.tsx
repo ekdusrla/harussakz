@@ -1,59 +1,87 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-
+import { useAuth } from "../context/AuthContext";
 
 export default function GenerateRoutine4() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const { token } = useAuth(); 
 
-    const router = useRouter();
-	const { routine, period, selectedDays } = useLocalSearchParams();
+ const { routineId, routine: titleParam, period: periodParam, selectedDays: daysParam, breed: breedParam } = params;
 
-	const parsedDays =
-	typeof selectedDays === "string" ? JSON.parse(selectedDays) : [];
+const paramStr = typeof breedParam === "string" ? breedParam : "불러오는 중...";
+const [breed, setBreed] = useState<string>(paramStr);
+
+const [loading, setLoading] = useState(true);
+
+  const routine = titleParam || "루틴 없음";
+  const period = periodParam || "기간 없음";
+
+  let selectedDays: string[] = [];
+  try {
+    selectedDays = typeof daysParam === "string" ? JSON.parse(daysParam) : [];
+  } catch {
+    selectedDays = [];
+  }
 
 
-    return (
-        <View style={styles.safeareaview}>
-            <View style={[styles.view, styles.viewBg]}>
-                    <Text style={styles.text}>확인</Text>
-                    <Image style={[styles.frameIcon, styles.frameIconPosition]} width={153} height={28} source={require("../assets/images/bar4.png")}/>
-                    <Text style={styles.safeareaviewText}>루틴이 완성되었어요!</Text>
-                    <Image style={[styles.untitled8Icon, styles.itemPosition]} resizeMode="cover" source={require("../assets/images/detail0.png")}/>
-                    <Text style={[styles.text5, styles.textTypo]}>루틴</Text>
-                    <Text style={[styles.text4, styles.textPosition3]}>설정기간</Text>
-                    <Text style={[styles.text8, styles.textPosition2]}>주기</Text>
-                    <Text style={[styles.text10, styles.textPosition1]}>씨앗</Text>
-					<Text style={[styles.text7, styles.textFlexBox]}>{routine}</Text>
-					<Text style={[styles.text6, styles.textFlexBox]}>{period}</Text>
-					<Text style={[styles.text9, styles.textPosition5]}>
-					{parsedDays.length > 0 ? `매주 ${parsedDays.join(" ")}` : ""}
-					</Text>
-                    <Text style={[styles.text11, styles.textPosition6]}>백합과</Text>
-                    <View style={[styles.inner, styles.innerLayout]} />
-                    <View style={[styles.lineView, styles.innerLayout]} />
-                    <View style={[styles.safeareaviewChild, styles.innerLayout]} />
-                    <View style={styles.child2} />
-                    <View style={[styles.buttonWrap, styles.frameIconPosition]}>
-                            <Pressable
-                                    style={[
-                                    styles.wrapper7,
-                                    styles.wrapperLayout,
-                                    ]}
-                                    onPress={() => router.push("/(tabs)/routine")}
-                                    >
-                                    <Text style={[styles.text15, styles.textPosition]}>확인</Text>
-                                    </Pressable>
-                            <Pressable
-                            style={[styles.wrapper8, styles.wrapperLayout]}
-                            onPress={() => router.push("/generateroutine3")}
-                            >
-                            <Text style={[styles.text16, styles.textPosition]}>이전으로</Text>
-                            </Pressable>
-                    </View>
-            </View>
+
+
+
+  return (
+    <View style={styles.safeareaview}>
+      <View style={[styles.view, styles.viewBg]}>
+        <Text style={styles.text}>확인</Text>
+        <Image
+          style={[styles.frameIcon, styles.frameIconPosition]}
+          width={153}
+          height={28}
+          source={require("../assets/images/bar4.png")}
+        />
+        <Text style={styles.safeareaviewText}>루틴이 완성되었어요!</Text>
+        <Image
+          style={[styles.untitled8Icon, styles.itemPosition]}
+          resizeMode="cover"
+          source={require("../assets/images/detail0.png")}
+        />
+
+        <Text style={[styles.text5, styles.textTypo]}>루틴</Text>
+        <Text style={[styles.text4, styles.textPosition3]}>설정기간</Text>
+        <Text style={[styles.text8, styles.textPosition2]}>주기</Text>
+        <Text style={[styles.text10, styles.textPosition1]}>씨앗</Text>
+
+        <Text style={[styles.text7, styles.textFlexBox]}>{routine}</Text>
+        <Text style={[styles.text6, styles.textFlexBox]}>{period}</Text>
+        <Text style={[styles.text9, styles.textPosition5]}>
+          {selectedDays.length > 0 ? `매주 ${selectedDays.join(" ")}` : ""}
+        </Text>
+        <Text style={[styles.text11, styles.textPosition6]}>{breed}</Text>
+
+        <View style={[styles.inner, styles.innerLayout]} />
+        <View style={[styles.lineView, styles.innerLayout]} />
+        <View style={[styles.safeareaviewChild, styles.innerLayout]} />
+        <View style={styles.child2} />
+
+        <View style={[styles.buttonWrap, styles.frameIconPosition]}>
+          <Pressable
+            style={[styles.wrapper7, styles.wrapperLayout]}
+            onPress={() => router.push("/(tabs)/routine")}
+          >
+            <Text style={[styles.text15, styles.textPosition]}>확인</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.wrapper8, styles.wrapperLayout]}
+            onPress={() => router.push("/generateroutine3")}
+          >
+            <Text style={[styles.text16, styles.textPosition]}>이전으로</Text>
+          </Pressable>
         </View>
-    );
-
+      </View>
+    </View>
+  );
 }
+
 
 
 const styles = StyleSheet.create({
@@ -215,13 +243,13 @@ const styles = StyleSheet.create({
     		position: "absolute"
   	},
   	text7: {
-    		top: 463,
     		fontFamily: "NanumSquareNeo-Rg",
     		lineHeight: 22,
     		letterSpacing: -0.43,
     		fontSize: 14,
     		right:60,
-    		position: "absolute"
+    		position: "absolute",
+			top : 464
   	},
   	text8: {
     		marginLeft: -160,
@@ -303,26 +331,10 @@ const styles = StyleSheet.create({
             marginLeft: -27,
             color: "#9ea4a9"
     },
-      label: {
-    position: "absolute",
-    fontFamily: "NanumSquareNeo-Bd",
-    fontWeight: "700",
-    fontSize: 14,
-    color: "#26282c",
-    lineHeight: 22,
-    letterSpacing: -0.43,
-    textAlign: "left",
-    left: "20%", // 왼쪽 정렬 위치
-  },
-  value: {
-    position: "absolute",
-    fontFamily: "NanumSquareNeo-Bd",
-    fontWeight: "700",
-    fontSize: 14,
-    color: "#1c1e1f",
-    lineHeight: 22,
-    letterSpacing: -0.43,
-    textAlign: "right",
-    right: "20%", // 오른쪽 정렬 위치
+	loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
   },
 });

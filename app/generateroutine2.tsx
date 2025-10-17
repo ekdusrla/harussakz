@@ -72,15 +72,20 @@ export default function GenerateRoutine2() {
                     style={[styles.wrapper, styles.wrapperLayout, selectedCard !== null && { backgroundColor: "#91E04C" }]}
                     onPress={() => {
                         if (selectedCard !== null) {
-                            router.push({
-                                pathname: "./generateroutine3",
-                                params: { routineText: routines[selectedCard] },
-                            });
+                        const selectedText = routines[selectedCard];        // 카드 글
+                        const emoji = selectedText.charAt(0);              // 첫 글자 → emoji
+                        router.push({
+                            pathname: "./generateroutine3",
+                            params: {
+                            routineText: selectedText,
+                            selectedEmoji: JSON.stringify([emoji]),       // 배열로 전달
+                            },
+                        });
                         }
                     }}
-                >
+                    >
                     <Text style={[styles.text30, styles.textPosition]}>확인</Text>
-                </Pressable>
+                    </Pressable>
                 <Pressable
                     style={[styles.container, styles.wrapperLayout]}
                     onPress={() => router.push("./generateroutine1")}
