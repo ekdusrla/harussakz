@@ -13,39 +13,46 @@ export default function GenerateRoutine1() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
-    const handleConfirm = async () => {
-        if (!text || text.length > maxLength) return;
-        setLoading(true);
+const handleConfirm = async () => {
+  if (!text || text.length > maxLength) return;
+  setLoading(true);
 
-        try {
-            const res = await fetch(`${SERVER_IP}/users/plantRoutine/generate-ai-routine`, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ userMood: text })
-            });
+  try {
+    const res = await fetch(`${SERVER_IP}/users/plantRoutine/generate-ai-routine`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ userMood: text })
+    });
 
-            const data = await res.json();
-            console.log("AI 루틴 반환:", data);
+    const data = await res.json();
+    console.log("AI 루틴 반환:", data);
 
-            // routines가 없거나 배열이 아니면 기본 루틴으로 대체
-            const routinesToStore = Array.isArray(data.routines)
-                ? data.routines
-                : ["도서 30분 읽기", "오전 10시에 일어나기", "명상 30분 하기"];
+    // ✅ flowerId 저장
+    if (data.flowerId) {
+    console.log("💡 AI 루틴 반환 flowerId (원본):", data.flowerId);
+    await AsyncStorage.setItem("flowerId", String(data.flowerId));
+    }
 
-            // AsyncStorage에 저장
-            await AsyncStorage.setItem("aiRoutines", JSON.stringify(routinesToStore));
 
-            router.push("./generateroutine2"); // params 필요 없음
-        } catch (err) {
-            console.error(err);
-            alert("AI 루틴 생성 중 오류가 발생했습니다.");
-        } finally{
-            setLoading(false);
-        }
-    };
+    // routines 저장
+    const routinesToStore = Array.isArray(data.routines)
+      ? data.routines
+      : ["도서 30분 읽기", "오전 10시에 일어나기", "명상 30분 하기"];
+
+    await AsyncStorage.setItem("aiRoutines", JSON.stringify(routinesToStore));
+
+    router.push("./generateroutine2");
+  } catch (err) {
+    console.error(err);
+    alert("AI 루틴 생성 중 오류가 발생했습니다.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
     return (
         <View style={styles.safeareaview}>

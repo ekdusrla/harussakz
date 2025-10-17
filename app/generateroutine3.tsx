@@ -1,210 +1,169 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { useAuth } from "../context/AuthContext"; // ✅ 토큰 context
+import { useAuth } from "../context/AuthContext";
 
-        export default function GenerateRoutine3() {
-        const router = useRouter();
-        const { token } = useAuth(); 
-        const { routineText, selectedEmoji } = useLocalSearchParams<{
-        routineText?: string;
-        selectedEmoji?: string;
-        }>();
+export default function GenerateRoutine3() {
+  const router = useRouter();
+  const { token } = useAuth();
+  const { routineText, selectedEmoji, flowerId: paramFlowerId } = useLocalSearchParams<{
+    routineText?: string;
+    selectedEmoji?: string;
+    flowerId?: string;
+  }>();
 
-        const [routine, setRoutine] = useState("");
-        const [period, setPeriod] = useState("");
-        const [selectedDays, setSelectedDays] = useState<string[]>([]);
-        const [modalVisible, setModalVisible] = useState(false);
-        const [selectedDates, setSelectedDates] = useState<string[]>([]);
-        const [isLoading, setIsLoading] = useState(false);
-        // 요일 순서 배열
-        const weekOrder = ["월", "화", "수", "목", "금", "토", "일"];
+  const [flowerId, setFlowerId] = useState<number | null>(null);
+  const [routine, setRoutine] = useState("");
+  const [period, setPeriod] = useState("");
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
-        // 선택된 요일 weekOrder 순으로 정렬
-        const sortedSelectedDays = weekOrder.filter((day) => selectedDays.includes(day));
+  const emoji = selectedEmoji ? JSON.parse(selectedEmoji)[0] : "🌱";
 
+  useEffect(() => {
+  if (routineText && routineText !== "나의 루틴 만들기") {
+    setRoutine(routineText.slice(2));
+  }
 
-        // ✅ 카드에서 전달받은 emoji 처리
-        const emoji = selectedEmoji ? JSON.parse(selectedEmoji)[0] : "🌱";
+  const loadFlowerId = async () => {
+    if (paramFlowerId) {
+      console.log("🌸 전달된 flowerId (params):", paramFlowerId);
+      setFlowerId(Number(paramFlowerId));
+    } else {
+      const stored = await AsyncStorage.getItem("flowerId");
+      console.log("🌸 저장된 flowerId (AsyncStorage):", stored);
+      if (stored) setFlowerId(Number(stored));
+    }
+  };
+  loadFlowerId();
+}, [routineText, paramFlowerId]);
 
-        // ✅ 루틴 텍스트 초기화
-        useEffect(() => {
-        if (routineText && routineText !== "나의 루틴 만들기") {
-        setRoutine(routineText.slice(2));
-        } else {
-        setRoutine("");
-        }
-        }, [routineText]);
+  const isConfirmEnabled =
+    routine.trim() !== "" && period.trim() !== "" && selectedDays.length > 0;
 
-        const isConfirmEnabled =
-        routine.trim() !== "" && period.trim() !== "" && selectedDays.length > 0;
+      // ✅ 요일 토글
+  const toggleDay = (day: string) => {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
 
-        // ✅ 요일 선택 토글
-        const toggleDay = (day: string) => {
-        setSelectedDays((prev) =>
-        prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-        );
-        };
+    // ✅ 달력 관련 로직
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayString = today.toISOString().split("T")[0];
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayString = today.toISOString().split("T")[0];
+  const handleDayPress = (day: any) => {
+    const dayDate = new Date(day.dateString);
+    dayDate.setHours(0, 0, 0, 0);
+    if (dayDate < today) return;
 
-        const handleDayPress = (day: any) => {
-        const dayDate = new Date(day.dateString);
-        dayDate.setHours(0, 0, 0, 0);
-        if (dayDate < today) return;
+    let newSelectedDates = [...selectedDates];
+    if (newSelectedDates.length === 2) newSelectedDates = [];
+    newSelectedDates.push(day.dateString);
+    setSelectedDates(newSelectedDates);
 
-        let newSelectedDates = [...selectedDates];
-        if (newSelectedDates.length === 2) newSelectedDates = [];
-        newSelectedDates.push(day.dateString);
-        setSelectedDates(newSelectedDates);
+    if (newSelectedDates.length === 2) {
+      const sorted = [...newSelectedDates].sort();
+      const start = new Date(sorted[0]);
+      const end = new Date(sorted[1]);
+      const formatDate = (d: Date) =>
+        `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
+          d.getDate()
+        ).padStart(2, "0")}`;
+      setPeriod(`${formatDate(start)}~${formatDate(end)}`);
+    } else if (newSelectedDates.length === 1) {
+      const d = new Date(newSelectedDates[0]);
+      const formatDate = (d: Date) =>
+        `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
+          d.getDate()
+        ).padStart(2, "0")}`;
+      setPeriod(`${formatDate(d)}~`);
+    }
+  };
 
-        if (newSelectedDates.length === 2) {
-        const sorted = [...newSelectedDates].sort();
-        const start = new Date(sorted[0]);
-        const end = new Date(sorted[1]);
-        const formatDate = (d: Date) =>
-                `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
-                d.getDate()
-                ).padStart(2, "0")}`;
-        setPeriod(`${formatDate(start)}~${formatDate(end)}`);
-        } else if (newSelectedDates.length === 1) {
-        const d = new Date(newSelectedDates[0]);
-        const formatDate = (d: Date) =>
-                `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
-                d.getDate()
-                ).padStart(2, "0")}`;
-        setPeriod(`${formatDate(d)}~`);
-        }
-        };
+  const getMarkedDates = () => {
+    const marks: { [date: string]: any } = {};
+    if (selectedDates.length === 0) {
+      marks[todayString] = { marked: true, dotColor: "#91E04C" };
+      return marks;
+    }
+    const sortedDates = [...selectedDates].sort();
+    const startDate = new Date(sortedDates[0]);
+    const endDate = selectedDates.length === 2 ? new Date(sortedDates[1]) : startDate;
 
-        const getMarkedDates = () => {
-        const marks: { [date: string]: any } = {};
-        if (selectedDates.length === 0) {
-        marks[todayString] = { marked: true, dotColor: "#91E04C" };
-        return marks;
-        }
-        const sortedDates = [...selectedDates].sort();
-        const startDate = new Date(sortedDates[0]);
-        const endDate = selectedDates.length === 2 ? new Date(sortedDates[1]) : startDate;
+    let d = new Date(startDate);
+    while (d <= endDate) {
+      const dateStr = d.toISOString().split("T")[0];
+      if (d.getTime() === startDate.getTime()) {
+        marks[dateStr] = { startingDay: true, color: "#91E04C", textColor: "white" };
+      } else if (d.getTime() === endDate.getTime()) {
+        marks[dateStr] = { endingDay: true, color: "#91E04C", textColor: "white" };
+      } else {
+        marks[dateStr] = { color: "#91E04C", textColor: "white" };
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    return marks;
+  };
+  const dayMap: Record<string, string> = {
+    일: "SUNDAY",
+    월: "MONDAY",
+    화: "TUESDAY",
+    수: "WEDNESDAY",
+    목: "THURSDAY",
+    금: "FRIDAY",
+    토: "SATURDAY",
+  };
 
-        let d = new Date(startDate);
-        while (d <= endDate) {
-        const dateStr = d.toISOString().split("T")[0];
-        if (d.getTime() === startDate.getTime()) {
-                marks[dateStr] = { startingDay: true, color: "#91E04C", textColor: "white" };
-        } else if (d.getTime() === endDate.getTime()) {
-                marks[dateStr] = { endingDay: true, color: "#91E04C", textColor: "white" };
-        } else {
-                marks[dateStr] = { color: "#91E04C", textColor: "white" };
-        }
-        d.setDate(d.getDate() + 1);
-        }
-        return marks;
-        };
+  const createRoutine = async () => {
+    if (!token) return Alert.alert("로그인이 필요합니다.");
+    if (selectedDates.length === 0) return Alert.alert("날짜를 선택해주세요.");
+    if (!flowerId) return Alert.alert("flowerId가 없습니다. 다시 시도해주세요.");
+    if (isLoading) return;
 
-        // ✅ 요일 매핑
-        const dayMap: Record<string, string> = {
-        일: "SUNDAY",
-        월: "MONDAY",
-        화: "TUESDAY",
-        수: "WEDNESDAY",
-        목: "THURSDAY",
-        금: "FRIDAY",
-        토: "SATURDAY",
-        };
-
-        const createRoutine = async () => {
-  if (!token) return Alert.alert("로그인이 필요합니다.");
-  if (selectedDates.length === 0) return Alert.alert("날짜를 선택해주세요.");
-
-  const sortedDates = [...selectedDates].sort();
-  const startDate = sortedDates[0];
-  const endDate = sortedDates.length === 2 ? sortedDates[1] : sortedDates[0];
-
-  try {
     setIsLoading(true);
 
-    // 1️⃣ AI 루틴 생성
-    const aiResponse = await fetch(
-      "http://3.37.215.53:8080/users/plantRoutine/generate-ai-routine",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userMood: "neutral" }),
-      }
-    );
-    const aiData = await aiResponse.json();
-    if (!aiResponse.ok)
-      throw new Error(`AI 루틴 API 실패: ${JSON.stringify(aiData)}`);
-
-    const plantId = aiData.flowerId;
-    const userMood = aiData.userMood;
-
-    // 2️⃣ 루틴 생성 API 호출
-    const response = await fetch("http://3.37.215.53:8080/routines", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    try {
+      const routineBody = {
         title: routine,
-        startDate,
-        endDate,
-        repeatDays: selectedDays.map((day) => dayMap[day]),
-        plantId,
+        startDate: selectedDates[0],
+        endDate: selectedDates.length === 2 ? selectedDates[1] : selectedDates[0],
+        repeatDays: selectedDays.map((d) => dayMap[d]),
+        plantId: flowerId.toString(),
         emoji,
-        userMood,
-      }),
-    });
+      };
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`루틴 생성 실패: ${errText}`);
+      const response = await fetch("http://3.37.215.53:8080/routines", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(routineBody),
+      });
+
+      const createdRoutine = await response.json();
+
+      router.push({
+        pathname: "/generateroutine4",
+        params: {
+          routine,
+          period: `${selectedDates[0]} ~ ${selectedDates[1] || selectedDates[0]}`,
+          selectedDays: JSON.stringify(["월", "화", "수", "목", "금", "토", "일"].filter((d) => selectedDays.includes(d))),
+          routineId: createdRoutine.id,
+          breed: createdRoutine.breed || "실패과",
+          flowerId: flowerId.toString(),
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      Alert.alert("네트워크 오류", "루틴 생성 중 문제가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
     }
-
-// POST 응답 이후
-const createdRoutine = await response.json();
-const routineId = createdRoutine.id;
-const breed = createdRoutine.breed || "백합과"; // POST 응답에서 바로 가져오기
-
-// 3️⃣ 주기 정렬 (월~일)
-const sortedSelectedDays = ["월","화","수","목","금","토","일"].filter((d) =>
-  selectedDays.includes(d)
-);
-
-console.log("createdRoutine POST 응답:", createdRoutine);
-console.log("생성된 routineId:", routineId);
-console.log("breed:", breed);
-
-// 4️⃣ GenerateRoutine4로 params 전달 (breed 포함)
-router.push({
-  pathname: "/generateroutine4",
-  params: {
-    routine,
-    period: `${startDate} ~ ${endDate}`,
-    selectedDays: JSON.stringify(sortedSelectedDays),
-    breed, // 여기 추가
-    routineId, 
-  },
-});
-
-  } catch (error) {
-    console.error("createRoutine error:", error);
-    Alert.alert("네트워크 오류", "서버에 연결할 수 없습니다.");
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
-
+  };
 
   return (
     <View style={styles.safeareaview}>
