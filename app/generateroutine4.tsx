@@ -1,19 +1,18 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../context/AuthContext";
 
 export default function GenerateRoutine4() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { token } = useAuth(); 
+  const { token } = useAuth();
 
- const { routineId, routine: titleParam, period: periodParam, selectedDays: daysParam, breed: breedParam } = params;
+  const { routineId, routine: titleParam, period: periodParam, selectedDays: daysParam, breed: breedParam } = params;
 
-const paramStr = typeof breedParam === "string" ? breedParam : "불러오는 중...";
-const [breed, setBreed] = useState<string>(paramStr);
-
-const [loading, setLoading] = useState(true);
+  const paramStr = typeof breedParam === "string" ? breedParam : "불러오는 중...";
+  const [breed, setBreed] = useState<string>(paramStr);
+  const [loading, setLoading] = useState(false);
 
   const routine = titleParam || "루틴 없음";
   const period = periodParam || "기간 없음";
@@ -25,8 +24,54 @@ const [loading, setLoading] = useState(true);
     selectedDays = [];
   }
 
+  const handleDeleteRoutine = async () => {
+  if (!routineId) {
+    Alert.alert("오류", "삭제할 루틴 ID가 없습니다.");
+    return;
+  }
 
+  Alert.alert(
+    "루틴 삭제",
+    "이전으로 돌아가면 생성한 루틴이 삭제됩니다. 계속하시겠습니까?",
+    [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setLoading(true);
 
+            const response = await fetch("http://3.37.215.53:8080/routines/delete", {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ routineId: Number(routineId) }),
+            });
+
+            const text = await response.text(); // 👈 응답을 먼저 텍스트로 받음
+            console.log("서버 응답:", text);
+
+            if (response.ok) {
+              Alert.alert("삭제 완료", "루틴이 삭제되었습니다.");
+              router.push("/generateroutine3");
+            } else {
+              console.error("삭제 실패:", text);
+              Alert.alert("실패", `루틴 삭제 실패\n${text}`);
+            }
+          } catch (error) {
+            console.error("Error deleting routine:", error);
+            Alert.alert("오류", "서버 요청 중 문제가 발생했습니다.");
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]
+  );
+};
 
 
   return (
@@ -58,29 +103,33 @@ const [loading, setLoading] = useState(true);
         </Text>
         <Text style={[styles.text11, styles.textPosition6]}>{breed}</Text>
 
-        <View style={[styles.inner, styles.innerLayout]} />
-        <View style={[styles.lineView, styles.innerLayout]} />
-        <View style={[styles.safeareaviewChild, styles.innerLayout]} />
-        <View style={styles.child2} />
-
         <View style={[styles.buttonWrap, styles.frameIconPosition]}>
           <Pressable
             style={[styles.wrapper7, styles.wrapperLayout]}
             onPress={() => router.push("/(tabs)/routine")}
+            disabled={loading}
           >
-            <Text style={[styles.text15, styles.textPosition]}>확인</Text>
+            <Text style={[styles.text15, styles.textPosition]}>
+              {loading ? "처리 중..." : "확인"}
+            </Text>
           </Pressable>
+
+          {/* 이전으로 버튼 → 삭제 후 이동 */}
           <Pressable
             style={[styles.wrapper8, styles.wrapperLayout]}
-            onPress={() => router.push("/generateroutine3")}
+            onPress={handleDeleteRoutine}
+            disabled={loading}
           >
-            <Text style={[styles.text16, styles.textPosition]}>이전으로</Text>
+            <Text style={[styles.text16, styles.textPosition]}>
+              {loading ? "삭제 중..." : "이전으로"}
+            </Text>
           </Pressable>
         </View>
       </View>
     </View>
   );
 }
+
 
 
 

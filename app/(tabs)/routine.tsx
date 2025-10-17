@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 
 type DateObj = {
@@ -204,7 +204,7 @@ const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
         <Pressable onPress={() => router.push("/login")} hitSlop={20} style={{zIndex: 10}}>
           <Image style={styles.item22}  source={require("../../assets/images/icon-menu.png")} resizeMode="contain" />
         </Pressable>
-        <View style={{ marginTop: 58, marginHorizontal: 24 }}>
+        <ScrollView style={{ marginTop: 58, marginHorizontal: 24, height: 400 }}>
           {allRoutines.map((routine, index) => (
             <Pressable key={index} onPress={() => toggleCheck(index)} style={{ flexDirection: "row", alignItems: "center", marginBottom: 22 }}>
               <Image source={checkedImages[index] ?? require("../../assets/images/icon-nonecheck.png")} style={{ width: 24, height: 24, marginRight: 12 }} resizeMode="contain" />
@@ -213,7 +213,7 @@ const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
 
         <Text style={[styles.myRoutine, styles.text19Typo]}>My Routine</Text>
               <Pressable

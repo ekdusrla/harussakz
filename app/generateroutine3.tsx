@@ -266,7 +266,7 @@ export default function GenerateRoutine3() {
   disabled={!isConfirmEnabled || isLoading} // 🔹 로딩 중엔 비활성화
   onPress={createRoutine}
 >
-  <Text style={[styles.text15, styles.textPosition]}>
+  <Text style={[styles.text15, styles.textPositionn]}>
     {isLoading ? "생성 중..." : "확인"} {/* 🔹 상태에 따라 변경 */}
   </Text>
 </Pressable>
@@ -363,11 +363,22 @@ const styles = StyleSheet.create({
             textAlign: "center",
             lineHeight: 22,
             letterSpacing: -0.43,
-            fontSize: 14,
+            fontSize: 16,
             top: "50%",
             fontFamily: "NanumSquareNeo-Bd",
             fontWeight: "600",
             left: "50%",
+            position: "absolute"
+    },
+        textPositionn: {
+            marginTop: -11,
+            textAlign: "center",
+            lineHeight: 22,
+            letterSpacing: -0.43,
+            fontSize: 16,
+            top: "50%",
+            fontFamily: "NanumSquareNeo-Bd",
+            fontWeight: "600",
             position: "absolute"
     },
     view: {
@@ -472,7 +483,6 @@ const styles = StyleSheet.create({
     },
     text15: {
             color: "#fff",
-            marginLeft: -14,
             marginTop: -11
     },
     wrapper8: {

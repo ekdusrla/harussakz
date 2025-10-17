@@ -85,7 +85,7 @@ const handleConfirm = async () => {
                         onPress={handleConfirm}
                         disabled={loading} // 로딩 중 버튼 비활성화
                     >
-                        <Text style={[styles.text2, styles.itemPosition]}>
+                        <Text style={[styles.text2]}>
                             {loading ? "AI 생성 중..." : "확인"} {/* 버튼 글씨 변경 */}
                         </Text>
                     </Pressable>
@@ -195,10 +195,9 @@ const styles = StyleSheet.create({
             height: 44,
             justifyContent: "center", // 세로 중앙
             alignItems: "center",
+            flexDirection: "row",
     },
     text2: {
-            justifyContent: "center", // 세로 중앙
-            alignItems: "center",
             fontSize: 16,
             color: "#fff",
             textAlign: "center",
@@ -206,7 +205,6 @@ const styles = StyleSheet.create({
             letterSpacing: -0.43,
             fontFamily: "NanumSquareNeo-Bd",
             fontWeight: "600",
-            marginLeft: -16
     },
     item: {
             marginLeft: -77,
