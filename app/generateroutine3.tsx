@@ -1,87 +1,82 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { useAuth } from "../context/AuthContext"; // ✅ 토큰 context
 
 export default function GenerateRoutine3() {
+  const router = useRouter();
+  const { token } = useAuth(); // ✅ 로그인 토큰 가져오기
+  const { routineText } = useLocalSearchParams<{ routineText?: string }>();
 
-    const [routine, setRoutine] = useState("");
-    const [period, setPeriod] = useState("");
-    const router = useRouter();
-    const [selectedDays, setSelectedDays] = useState<string[]>([]);
-    const { routineText } = useLocalSearchParams<{ routineText?: string }>();
+  const [routine, setRoutine] = useState("");
+  const [period, setPeriod] = useState("");
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
 
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const isConfirmEnabled = routine.trim() !== "" && period.trim() !== "" && selectedDays.length > 0;
 
-    const isConfirmEnabled = routine.trim() !== "" && period.trim() !== "" && selectedDays.length > 0;
+  const toggleDay = (day: string) => {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
 
-    const toggleDay = (day: string) => {
-        setSelectedDays((prev) =>
-            prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-        );
-    };
-
-    useEffect(() => {
+  useEffect(() => {
     if (routineText && routineText !== "나의 루틴 만들기") {
-      setRoutine(routineText); // 카드 글씨를 초기값으로 세팅
+      setRoutine(routineText.slice(2));
     } else {
-      setRoutine(""); // placeholder 보여주기 위해 빈 값
+      setRoutine("");
     }
   }, [routineText]);
 
-
-    const today = new Date();
+  const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayString = today.toISOString().split("T")[0];
 
   const handleDayPress = (day: any) => {
-  const dayDate = new Date(day.dateString);
-  dayDate.setHours(0, 0, 0, 0);
+    const dayDate = new Date(day.dateString);
+    dayDate.setHours(0, 0, 0, 0);
+    if (dayDate < today) return;
 
-  if (dayDate < today) return;
+    let newSelectedDates = [...selectedDates];
+    if (newSelectedDates.length === 2) newSelectedDates = [];
+    newSelectedDates.push(day.dateString);
+    setSelectedDates(newSelectedDates);
 
-  let newSelectedDates = [...selectedDates];
-
-  if (newSelectedDates.length === 2) newSelectedDates = [];
-
-  newSelectedDates.push(day.dateString);
-  setSelectedDates(newSelectedDates);
-
-  if (newSelectedDates.length === 2) {
-    const sorted = [...newSelectedDates].sort(); 
-    const start = new Date(sorted[0]);
-    const end = new Date(sorted[1]);
-    const formatDate = (d: Date) =>
-      `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-    setPeriod(`${formatDate(start)}~${formatDate(end)}`);
-  } else if (newSelectedDates.length === 1) {
-    const d = new Date(newSelectedDates[0]);
-    const formatDate = (d: Date) =>
-      `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-    setPeriod(`${formatDate(d)}~`);
-  }
-};
-
+    if (newSelectedDates.length === 2) {
+      const sorted = [...newSelectedDates].sort();
+      const start = new Date(sorted[0]);
+      const end = new Date(sorted[1]);
+      const formatDate = (d: Date) =>
+        `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
+          d.getDate()
+        ).padStart(2, "0")}`;
+      setPeriod(`${formatDate(start)}~${formatDate(end)}`);
+    } else if (newSelectedDates.length === 1) {
+      const d = new Date(newSelectedDates[0]);
+      const formatDate = (d: Date) =>
+        `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
+          d.getDate()
+        ).padStart(2, "0")}`;
+      setPeriod(`${formatDate(d)}~`);
+    }
+  };
 
   const getMarkedDates = () => {
     const marks: { [date: string]: any } = {};
-
     if (selectedDates.length === 0) {
       marks[todayString] = { marked: true, dotColor: "#91E04C" };
       return marks;
     }
-
     const sortedDates = [...selectedDates].sort();
     const startDate = new Date(sortedDates[0]);
     const endDate = selectedDates.length === 2 ? new Date(sortedDates[1]) : startDate;
 
-
-
     let d = new Date(startDate);
     while (d <= endDate) {
       const dateStr = d.toISOString().split("T")[0];
-
       if (d.getTime() === startDate.getTime()) {
         marks[dateStr] = { startingDay: true, color: "#91E04C", textColor: "white" };
       } else if (d.getTime() === endDate.getTime()) {
@@ -94,146 +89,191 @@ export default function GenerateRoutine3() {
     return marks;
   };
 
-    return (
-        <View style={styles.safeareaview}>
-            <View style={[styles.view, styles.viewBg]}>
-                <View style={[styles.rectangleLineargradient, styles.child4Border]}/>
-                <View style={[styles.child4, styles.child4Layout]}/>
-                <Text style={styles.text}>기간을 설정해주세요</Text>
-                <Text style={[styles.text2, styles.textTypo1]}>루틴</Text>
-                <Text style={[styles.text3, styles.textTypo1]}>루틴 기간</Text>
-                <Text style={[styles.text4, styles.textTypo1]}>반복 주기</Text>
-                <Pressable
-                style={[styles.dayButton, styles.wrapper, styles.frameWrapperFlexBox, selectedDays.includes("일") && styles.daySelected]}
-                onPress={() => toggleDay("일")}
-                >
-                <Text style={[styles.text5, styles.textTypo]}>일</Text>
-                </Pressable>
-                <Pressable
-                style={[styles.dayButton, styles.container, styles.frameWrapperFlexBox, selectedDays.includes("월") && styles.daySelected]}
-                onPress={() => toggleDay("월")}
-                >
-                <Text style={[styles.text6, styles.textTypo]}>월</Text>
-                </Pressable>
-                <Pressable
-                style={[styles.dayButton, styles.frame, styles.frameWrapperFlexBox, selectedDays.includes("화") && styles.daySelected]}
-                onPress={() => toggleDay("화")}
-                >
-                <Text style={[styles.text6, styles.textTypo]}>화</Text>
-                </Pressable>
-                <Pressable
-                style={[styles.dayButton, styles.frameView, styles.frameWrapperFlexBox, selectedDays.includes("수") && styles.daySelected]}
-                onPress={() => toggleDay("수")}
-                >
-                <Text style={[styles.text6, styles.textTypo]}>수</Text>
-                </Pressable>
-                <Pressable
-                style={[styles.dayButton, styles.safeareaviewWrapper, styles.frameWrapperFlexBox, selectedDays.includes("목") && styles.daySelected]}
-                onPress={() => toggleDay("목")}
-                >
-                <Text style={[styles.text6, styles.textTypo]}>목</Text>
-                </Pressable>
-                <Pressable
-                style={[styles.dayButton, styles.wrapper2, styles.frameWrapperFlexBox, selectedDays.includes("금") && styles.daySelected]}
-                onPress={() => toggleDay("금")}
-                >
-                <Text style={[styles.text6, styles.textTypo]}>금</Text>
-                </Pressable>
-                <Pressable
-                style={[styles.dayButton, styles.wrapper3, styles.frameWrapperFlexBox, selectedDays.includes("토") && styles.daySelected]}
-                onPress={() => toggleDay("토")}
-                >
-                <Text style={[styles.text11, styles.textTypo]}>토</Text>
-                </Pressable>
-                <Pressable
-                    style={[styles.iconCalendarParent, styles.iconLayout]}
-                        onPress={() => setModalVisible(true)} // 여기서 팝업 열기
-                        >
-                <Image
-                    style={[styles.iconCalendar, styles.iconLayout]}
-                    resizeMode="cover"
-                    source={require("../assets/images/calendar.png")}
-                />
-                </Pressable>
-                <Modal
-                    transparent={true}
-                    visible={modalVisible}
-                    animationType="fade"
-                    onRequestClose={() => setModalVisible(false)}
-                >
-        <View style={styles.modalWrapper}>
-          <View style={styles.modalContent}>
-            <Calendar
-              style={styles.calendar}
-              markedDates={getMarkedDates()}
-              markingType="period"
-              onDayPress={handleDayPress}
-              theme={{
-                arrowColor: "#91E04C",
-                todayTextColor: "#91E04C",
-                textDayFontSize: 14,
-                textMonthFontSize: 16,
-                textDayHeaderFontSize: 12,
-              }}
-            />
-          </View>
-          <Pressable style={[styles.button, { marginTop: -44 }]} onPress={() => setModalVisible(false)}>
-              <Text style={styles.buttonText}>닫기</Text>
-            </Pressable>
-        </View>
-      </Modal>
-            <Image style={[styles.frameIcon, styles.frameIconPosition]} width={153} height={28} source={require("../assets/images/bar3.png")}/>
-            <View style={[styles.wrapper5, styles.wrapperFlexBox]}>
-            <TextInput
-                style={styles.textInput}
-                value={routine} // 카드 글씨 또는 빈 값
-                onChangeText={setRoutine} // 수정 가능
-                placeholder={routineText === "나의 루틴 만들기" ? "반복하고 싶은 습관을 적어주세요" : ""}
-                placeholderTextColor="#CACDD3"
-            />
-            </View>
-                <View style={[styles.wrapper6, styles.wrapperFlexBox]}>
-                <TextInput
-                    style={[styles.textInput, styles.textTypo1]}
-                    placeholder="당신의 루틴 언제까지 할까요?"
-                    placeholderTextColor={"#CACDD3"}
-                    value={period}
-                    editable={false} // 읽기 전용으로 변경
-                    />
-            </View>
-                <View style={[styles.buttonWrap, styles.frameIconPosition]}>
-                        <Pressable
-                                style={[
-                                styles.wrapper7,
-                                styles.wrapperLayout,
-                                { backgroundColor: isConfirmEnabled ? "#91E04C" : "#CACDD3" },
-                                ]}
-                                disabled={!isConfirmEnabled}
-                                onPress={() =>
-                                        router.push({
-                                        pathname: "/generateroutine4",
-                                        params: {
-                                        routine: routine,
-                                        period: period,
-                                        selectedDays: JSON.stringify(selectedDays), // 배열은 문자열로 변환해서 전달
-                                        },
-                                        })
-                                        }
-                                >
-                                <Text style={[styles.text15, styles.textPosition]}>확인</Text>
-                                </Pressable>
-                        <Pressable
-                        style={[styles.wrapper8, styles.wrapperLayout]}
-                        onPress={() => router.push("/generateroutine2")}
-                        >
-                        <Text style={[styles.text16, styles.textPosition]}>이전으로</Text>
-                        </Pressable>
-                </View>
-            </View>
-        </View>
-    );
+  // ✅ 요일 매핑
+  const dayMap: Record<string, string> = {
+    일: "SUNDAY",
+    월: "MONDAY",
+    화: "TUESDAY",
+    수: "WEDNESDAY",
+    목: "THURSDAY",
+    금: "FRIDAY",
+    토: "SATURDAY",
+  };
 
+  // ✅ 루틴 생성 API
+  const [isLoading, setIsLoading] = useState(false); // 🔹 로딩 상태 추가
+
+// ✅ 루틴 생성 API
+const createRoutine = async () => {
+  if (!token) {
+    Alert.alert("로그인이 필요합니다.");
+    return;
+  }
+
+  if (selectedDates.length === 0) {
+    Alert.alert("날짜를 선택해주세요.");
+    return;
+  }
+
+  const sortedDates = [...selectedDates].sort();
+  const startDate = sortedDates[0];
+  const endDate = sortedDates.length === 2 ? sortedDates[1] : sortedDates[0];
+
+  try {
+    setIsLoading(true); // 🔹 로딩 시작
+
+    const response = await fetch("https://your-api-domain.com/routines", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: routine,
+        startDate,
+        endDate,
+        repeatDays: selectedDays.map((day) => dayMap[day]),
+        plantId: 0,
+        emoji: "🌱",
+        userMood: "HAPPY",
+      }),
+    });
+
+    if (response.ok) {
+      // Alert 제거하고 바로 다음 페이지로 이동
+      router.push("/generateroutine4");
+    } else {
+      const errText = await response.text();
+      console.error("루틴 생성 실패:", errText);
+      Alert.alert("루틴 생성 실패", "서버 오류가 발생했습니다.");
+    }
+  } catch (error) {
+    console.error(error);
+    Alert.alert("네트워크 오류", "서버에 연결할 수 없습니다.");
+  } finally {
+    setIsLoading(false); // 🔹 로딩 종료
+  }
+};
+
+  return (
+    <View style={styles.safeareaview}>
+      <View style={[styles.view, styles.viewBg]}>
+        <View style={[styles.rectangleLineargradient, styles.child4Border]} />
+        <View style={[styles.child4, styles.child4Layout]} />
+        <Text style={styles.text}>기간을 설정해주세요</Text>
+        <Text style={[styles.text2, styles.textTypo1]}>루틴</Text>
+        <Text style={[styles.text3, styles.textTypo1]}>루틴 기간</Text>
+        <Text style={[styles.text4, styles.textTypo1]}>반복 주기</Text>
+
+        {/* 요일 선택 */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginHorizontal: 32, marginTop: 500 }}>
+        {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
+        <Pressable
+        key={day}
+        style={[
+                styles.dayButton,
+                selectedDays.includes(day) && styles.daySelected,
+        ]}
+        onPress={() => toggleDay(day)}
+        >
+        <Text style={[styles.textTypo]}>{day}</Text>
+        </Pressable>
+        ))}
+        </View>
+
+
+        {/* 달력 아이콘 */}
+        <Pressable
+          style={[styles.iconCalendarParent, styles.iconLayout]}
+          onPress={() => setModalVisible(true)}
+        >
+          <Image
+            style={[styles.iconCalendar, styles.iconLayout]}
+            resizeMode="cover"
+            source={require("../assets/images/calendar.png")}
+          />
+        </Pressable>
+
+        {/* 달력 모달 */}
+        <Modal transparent visible={modalVisible} animationType="fade">
+          <View style={styles.modalWrapper}>
+            <View style={styles.modalContent}>
+              <Calendar
+                style={styles.calendar}
+                markedDates={getMarkedDates()}
+                markingType="period"
+                onDayPress={handleDayPress}
+                theme={{
+                  arrowColor: "#91E04C",
+                  todayTextColor: "#91E04C",
+                  textDayFontSize: 14,
+                  textMonthFontSize: 16,
+                  textDayHeaderFontSize: 12,
+                }}
+              />
+            </View>
+            <Pressable style={[styles.button, { marginTop: -44 }]} onPress={() => setModalVisible(false)}>
+              <Text style={styles.buttonText}>확인</Text>
+            </Pressable>
+          </View>
+        </Modal>
+
+        {/* 루틴 입력 */}
+        <Image style={[styles.frameIcon, styles.frameIconPosition]} width={153} height={28} source={require("../assets/images/bar3.png")} />
+        <View style={[styles.wrapper5, styles.wrapperFlexBox]}>
+          <TextInput
+            style={styles.textInput}
+            value={routine}
+            onChangeText={setRoutine}
+            placeholder={routineText === "나의 루틴 만들기" ? "반복하고 싶은 습관을 적어주세요" : ""}
+            placeholderTextColor="#CACDD3"
+          />
+        </View>
+
+        {/* 루틴 기간 (달력 눌렀을 때처럼) */}
+        <View style={[styles.wrapper6, styles.wrapperFlexBox]}>
+          <Pressable onPress={() => setModalVisible(true)} style={{ flex: 1 }}>
+            <Text
+              style={[
+                styles.textInput,
+                styles.textTypo2,
+                { color: period ? "black" : "#CACDD3", top: 24, left: 20 },
+              ]}
+            >
+              {period || "당신의 루틴 언제까지 할까요?"}
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* 버튼 영역 */}
+        <View style={[styles.buttonWrap, styles.frameIconPosition]}>
+<Pressable
+  style={[
+    styles.wrapper7,
+    styles.wrapperLayout,
+    { backgroundColor: isConfirmEnabled ? "#91E04C" : "#CACDD3" },
+  ]}
+  disabled={!isConfirmEnabled || isLoading} // 🔹 로딩 중엔 비활성화
+  onPress={createRoutine}
+>
+  <Text style={[styles.text15, styles.textPosition]}>
+    {isLoading ? "생성 중..." : "확인"} {/* 🔹 상태에 따라 변경 */}
+  </Text>
+</Pressable>
+
+
+          <Pressable
+            style={[styles.wrapper8, styles.wrapperLayout]}
+            onPress={() => router.push("/generateroutine2")}
+          >
+            <Text style={[styles.text16, styles.textPosition]}>이전으로</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
 }
+
 
 const styles = StyleSheet.create({
     safeareaview: {
@@ -263,7 +303,13 @@ const styles = StyleSheet.create({
             lineHeight: 22,
             letterSpacing: -0.43,
             color: "#26282c",
-            fontFamily: "NanumSquareNeo-Bd"
+            fontFamily: "NanumSquareNeo-Bd",
+            fontWeight:"600"
+    },
+        textTypo2: {
+            fontSize: 16,
+            lineHeight: 22,
+            letterSpacing: -0.43,
     },
     frameWrapperFlexBox: {
             justifyContent: "center",
@@ -272,7 +318,7 @@ const styles = StyleSheet.create({
             top: 498,
             alignItems: "center",
             flexDirection: "row",
-            position: "absolute"
+            position: "absolute",
     },
     textTypo: {
             lineHeight: 21,
@@ -373,20 +419,6 @@ const styles = StyleSheet.create({
             left: 20,
             position: "absolute"
     },
-    text5: {
-            color: "#ff6337"
-    },
-    text6: {
-            color: "#26282c"
-    },
-    wrapper: {left: 30},
-    container: {left: 80},
-    frame: {left: 130},
-    frameView: {left: 180},
-    safeareaviewWrapper: {left: 230},
-    wrapper2: {left: 280},
-    wrapper3: {left: 330},
-    text11: {color: "#2d5cc7"},
     iconCalendarParent: {
             top: 344,
             left: 29
@@ -451,7 +483,8 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         fontSize: 16,
         color: "#26282C",
-        fontFamily: "NanumSquareNeo-Rg"
+        fontFamily: "NanumSquareNeo-Rg",
+        fontWeight: "600"
     },
     daySelected: {
     backgroundColor: "#F9EEED",
@@ -459,8 +492,8 @@ const styles = StyleSheet.create({
     borderWidth: 0.5, // 선택되면 빨간 원
     },
     dayButton: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
