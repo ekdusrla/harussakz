@@ -102,6 +102,10 @@ export default function GenerateRoutine4() {
           {selectedDays.length > 0 ? `매주 ${selectedDays.join(" ")}` : ""}
         </Text>
         <Text style={[styles.text11, styles.textPosition6]}>{breed}</Text>
+        <View style={[styles.inner, styles.innerLayout]} />
+        <View style={[styles.lineView, styles.innerLayout]} />
+        <View style={[styles.safeareaviewChild, styles.innerLayout]} />
+        <View style={styles.child2} />
 
         <View style={[styles.buttonWrap, styles.frameIconPosition]}>
           <Pressable

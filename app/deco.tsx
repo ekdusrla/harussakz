@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 
@@ -8,7 +8,23 @@ export default function Deco() {
     const router = useRouter();
     const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
+    const webviewRef = useRef<WebView>(null);
 
+    useEffect(() => {
+    // Deco 페이지 진입 시 Unity 씬 변경
+    const timer = setTimeout(() => {
+      if (webviewRef.current) {
+        webviewRef.current.injectJavaScript(`
+          if (typeof unityInstance !== 'undefined') {
+            unityInstance.SendMessage('SceneController', 'ChangeScene', 'DecoScene');
+          }
+          true;
+        `);
+      }
+    }, 2000); // Unity 로드 시간 확보
+
+    return () => clearTimeout(timer);
+  }, []);
 
     return(
             <View style={{ flex: 1 }}>

@@ -10,7 +10,6 @@ export default function Home() {
   const { token } = useAuth();
 
   const [serverRoutines, setServerRoutines] = useState<{ id: number; routine: string; completed: boolean }[]>([]);
-
   const [currentIndex, setCurrentIndex] = useState(0);
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -33,7 +32,7 @@ export default function Home() {
       }, 5000);
     };
 
-    const initialTimeout = setTimeout(showImage, 10000);
+    const initialTimeout = setTimeout(showImage, 15000);
     const interval = setInterval(showImage, 10000);
 
     return () => {
@@ -42,7 +41,7 @@ export default function Home() {
     };
   }, []);
 
-  // 서버에서 루틴 가져오기 (Home 화면 포커스 시마다)
+  // 서버에서 루틴 가져오기
   const fetchServerRoutines = async () => {
     if (!token) return;
     try {
@@ -64,12 +63,15 @@ export default function Home() {
     }, [token])
   );
 
-  // 오늘 날짜 루틴 개수 계산
   const totalTodayRoutines = serverRoutines.length;
-  const completedRoutines = serverRoutines.filter(r => r.completed).length;
+  const completedRoutines = serverRoutines.filter((r) => r.completed).length;
   const remainingRoutines = totalTodayRoutines - completedRoutines;
 
-
+  // ✅ deco 버튼 클릭 시
+  const goToDeco = () => {
+    // React Native 쪽 페이지 전환
+    router.push("/deco");
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -106,7 +108,7 @@ export default function Home() {
         />
         </Pressable>
         <Pressable
-        onPress={() => router.push("/deco")} hitSlop={10}
+        onPress={goToDeco} hitSlop={10}
         style={[
             styles.item,
             { zIndex: 10 },
