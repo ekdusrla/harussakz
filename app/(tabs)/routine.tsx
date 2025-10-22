@@ -110,11 +110,21 @@ const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
 
 
   const toggleCheck = async (index: number) => {
+  // 선택된 날짜가 오늘 이후인지 확인
+  const selectedDate = new Date(selectedDateObj.year, selectedDateObj.month - 1, selectedDateObj.date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (selectedDate > today) {
+    alert("아직 날이 오지 않았아요!");
+    return;
+  }
+
   const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
   const routineName = allRoutines[index];
   const isGrowthRoutine = growthRoutines.includes(routineName);
 
-  // ✅ 1️⃣ 성장 루틴이면 기존 로컬 토글 로직 유지
+  // 성장 루틴
   if (isGrowthRoutine) {
     const newCheckedImages = [...checkedImages];
     if (!newCheckedImages[index]) {
@@ -131,9 +141,9 @@ const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
     return;
   }
 
-  // ✅ 2️⃣ 서버 루틴이면 PATCH 요청 보내기
+  // 서버 루틴
   try {
-    const serverIndex = index - growthRoutines.length; // 서버 루틴의 실제 인덱스
+    const serverIndex = index - growthRoutines.length;
     const routineId = serverRoutines[serverIndex].id;
 
     const res = await fetch(`http://3.37.215.53:8080/routines/${routineId}/complete`, {
@@ -146,12 +156,11 @@ const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
 
     if (!res.ok) throw new Error("루틴 완료 상태 변경 실패");
 
-    // 서버 응답 후 로컬 상태 갱신
+    // 상태 갱신
     const updated = [...serverRoutines];
     updated[serverIndex].completed = !updated[serverIndex].completed;
     setServerRoutines(updated);
 
-    // 체크 이미지 갱신
     const newCheckedImages = [...checkedImages];
     newCheckedImages[index] = updated[serverIndex].completed
       ? checkImages[Math.floor(Math.random() * checkImages.length)]
@@ -162,6 +171,9 @@ const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
     console.error("루틴 완료/취소 실패:", err);
   }
 };
+
+
+
 
 const handlePrePopupPress = () => {
   if (prePopupStep === 0) {
