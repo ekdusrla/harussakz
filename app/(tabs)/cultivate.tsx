@@ -8,7 +8,6 @@ export default function Cultivate() {
   const router = useRouter();
   const { token } = useAuth();
 
-  // ✅ 카드 타입 정의
   type Card = {
     id: number;
     emoji: string;
@@ -18,18 +17,17 @@ export default function Cultivate() {
     iconIndex: number;
   };
 
-  // ✅ 로컬 카드 (예시 카드 유지)
+  // 로컬 카드 ID를 음수로 지정해서 서버 카드와 겹치지 않도록 함
   const [cards] = useState<Card[]>([
-    { id: 1, emoji: "📖", title: "(예시)도서 30분 읽기", dday: "D-123", icon: require("../../assets/images/growth0.png"), iconIndex: 0 },
-    { id: 2, emoji: "💊", title: "(예시)영양제 섭취", dday: "D-100", icon: require("../../assets/images/growth1.png"), iconIndex: 1 },
-    { id: 3, emoji: "🚶", title: "(예시)산책 1시간 하기", dday: "D-78", icon: require("../../assets/images/growth2.png"), iconIndex: 2 },
-    { id: 4, emoji: "👤", title: "(예시)오늘도 우렁차게 살아남기", dday: "D-54", icon: require("../../assets/images/growth3.png"), iconIndex: 3 },
-    { id: 5, emoji: "🌞", title: "(예시)오전 9시에 일어나기", dday: "D-42", icon: require("../../assets/images/growth4.png"), iconIndex: 4 },
-    { id: 6, emoji: "🌛", title: "(예시)오후 10시에 잠들기", dday: "D-21", icon: require("../../assets/images/growth5.png"), iconIndex: 5 },
-    { id: 7, emoji: "🌞", title: "(예시)쾌변하기", dday: "D-13", icon: require("../../assets/images/growth6.png"), iconIndex: 6 },
+    { id: -1, emoji: "📖", title: "(예시)도서 30분 읽기", dday: "D-123", icon: require("../../assets/images/growth0.png"), iconIndex: 0 },
+    { id: -2, emoji: "💊", title: "(예시)영양제 섭취", dday: "D-100", icon: require("../../assets/images/growth1.png"), iconIndex: 1 },
+    { id: -3, emoji: "🚶", title: "(예시)산책 1시간 하기", dday: "D-78", icon: require("../../assets/images/growth2.png"), iconIndex: 2 },
+    { id: -4, emoji: "👤", title: "(예시)오늘도 우렁차게 살아남기", dday: "D-54", icon: require("../../assets/images/growth3.png"), iconIndex: 3 },
+    { id: -5, emoji: "🌞", title: "(예시)오전 9시에 일어나기", dday: "D-42", icon: require("../../assets/images/growth4.png"), iconIndex: 4 },
+    { id: -6, emoji: "🌛", title: "(예시)오후 10시에 잠들기", dday: "D-21", icon: require("../../assets/images/growth5.png"), iconIndex: 5 },
+    { id: -7, emoji: "🌞", title: "(예시)쾌변하기", dday: "D-13", icon: require("../../assets/images/growth6.png"), iconIndex: 6 },
   ]);
 
-  // ✅ 서버 카드 타입 & state
   type Cultivation = {
     id: number;
     userId: number;
@@ -45,9 +43,8 @@ export default function Cultivate() {
     imageUrl: string;
   };
 
-  const [serverCards, setServerCards] = useState<Card[]>([]); // ✅ 타입 지정 완료
+  const [serverCards, setServerCards] = useState<Card[]>([]);
 
-  // ✅ D-Day 계산 함수
   const calcDday = (endDate: string) => {
     const end = new Date(endDate);
     const now = new Date();
@@ -55,7 +52,6 @@ export default function Cultivate() {
     return diff >= 0 ? diff : 0;
   };
 
-  // ✅ 성장 이미지 선택 함수 (require 동적 호출 불가 → 정적 매핑)
   const getGrowthImage = (level: number) => {
     const images = [
       require("../../assets/images/growth0.png"),
@@ -69,24 +65,19 @@ export default function Cultivate() {
     return images[level] || images[0];
   };
 
-  // ✅ 서버 데이터 불러오기
   useEffect(() => {
+    if (!token) return;
     const fetchCultivations = async () => {
       try {
         const res = await fetch("http://3.37.215.53:8080/cultivations/user", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "*/*",
-          },
+          headers: { Authorization: `Bearer ${token}`, Accept: "*/*" },
         });
-
         if (!res.ok) throw new Error("서버 응답 오류");
         const data: Cultivation[] = await res.json();
 
         const mapped: Card[] = data.map((item) => ({
           id: item.id,
-          emoji: item.emoji && item.emoji.length > 0 ? item.emoji : "🌱",
+          emoji: item.emoji && item.emoji !== "?" ? item.emoji : "🌱",
           title: item.routineTitle || item.plantName || "이름 없음",
           dday: item.endDate ? `D-${calcDday(item.endDate)}` : "진행중",
           icon: getGrowthImage(item.level),
@@ -99,7 +90,7 @@ export default function Cultivate() {
       }
     };
 
-    if (token) fetchCultivations();
+    fetchCultivations();
   }, [token]);
 
   return (
@@ -107,13 +98,7 @@ export default function Cultivate() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* 씨앗 개수 표시 */}
         <View style={[styles.view2, styles.viewFlexBox]}>
-          <Image
-            style={styles.item}
-            width={20}
-            height={14}
-            resizeMode="contain"
-            source={require("../../assets/images/icon-seed.png")}
-          />
+          <Image style={styles.item} width={20} height={14} resizeMode="contain" source={require("../../assets/images/icon-seed.png")} />
           <View style={[styles.view3, styles.viewFlexBox]}>
             <Text style={styles.text15}>1234 개</Text>
           </View>
@@ -121,70 +106,55 @@ export default function Cultivate() {
 
         {/* 도움말 */}
         <View style={{ position: "relative" }}>
-          <Pressable onPress={() => setIsTooltipVisible((p) => !p)} style={styles.iconGridCalendar}>
-            <Image
-              style={styles.item}
-              width={24}
-              height={24}
-              source={require("../../assets/images/icon-question.png")}
-              resizeMode="contain"
-            />
+          <Pressable onPress={() => setIsTooltipVisible(p => !p)} style={styles.iconGridCalendar}>
+            <Image style={styles.item} width={24} height={24} source={require("../../assets/images/icon-question.png")} resizeMode="contain" />
           </Pressable>
-
-          {isTooltipVisible && (
-            <Image
-              source={require("../../assets/images/questionbubble.png")}
-              style={styles.tooltipImage}
-              resizeMode="contain"
-            />
-          )}
+          {isTooltipVisible && <Image source={require("../../assets/images/questionbubble.png")} style={styles.tooltipImage} resizeMode="contain" />}
         </View>
 
-        {/* 타이틀 */}
         <Text style={styles.title}>나의 정원</Text>
         <Text style={styles.subtitle}>식물과 함께 성장하는 우리의 하루</Text>
-        <Image
-          style={styles.item1}
-          width={360}
-          height={96}
-          resizeMode="cover"
-          source={require("../../assets/images/ground.png")}
-        />
+        <Image style={styles.item1} width={360} height={96} resizeMode="cover" source={require("../../assets/images/ground.png")} />
 
-        {/* ✅ 카드 리스트 (예시 + 서버 카드 모두 표시) */}
+        {/* 카드 리스트 */}
         <View style={styles.cardContainer}>
-          {[...cards, ...serverCards].map((card) => (
-            <Pressable
-              key={`${card.id}-${card.title}`}
-              onPress={() =>
-                router.push({
-                  pathname: "/cultivatedetails",
-                  params: {
-                    iconIndex: card.iconIndex.toString(),
-                    title: card.title,
-                  },
-                })
-              }
-              style={({ pressed }) => [styles.card, pressed && { opacity: 0.7 }]}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.emojiCircle}>
-                  <Text style={{fontSize: 16}}>{card.emoji}</Text>
-                </View>
-                <Text style={styles.dday}>{card.dday}</Text>
-              </View>
+          {[...cards, ...serverCards].map((card) => {
+            const isServer = serverCards.findIndex(c => c.id === card.id) !== -1;
 
-              <Image source={card.icon} style={styles.cardImage} resizeMode="contain" />
-              <Text style={styles.cardTitle}>
-                {card.title.length > 7 ? card.title.slice(0, 7) + "…" : card.title}
-              </Text>
-            </Pressable>
-          ))}
+            return (
+              <Pressable
+                key={`${card.id}-${card.title}`}
+                onPress={() =>
+                  router.push({
+                    pathname: "/cultivatedetails",
+                    params: {
+                      iconIndex: card.iconIndex.toString(),
+                      title: card.title,
+                      isServerCard: isServer ? "1" : "0",
+                      fromServerId: isServer ? card.id.toString() : undefined,
+                    },
+                  })
+                }
+                style={({ pressed }) => [styles.card, pressed && { opacity: 0.7 }]}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.emojiCircle}>
+                    <Text style={{ fontSize: 16 }}>{card.emoji}</Text>
+                  </View>
+                  <Text style={styles.dday}>{card.dday}</Text>
+                </View>
+
+                <Image source={card.icon} style={styles.cardImage} resizeMode="contain" />
+                <Text style={styles.cardTitle}>{card.title.length > 7 ? card.title.slice(0, 7) + "…" : card.title}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       </ScrollView>
     </View>
   );
 }
+
 
 
 const styles = StyleSheet.create({

@@ -1,175 +1,306 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Image, ImageBackground, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../context/AuthContext";
 
-export default function CultivateDatails() {
+export default function CultivateDetails() {
+  const router = useRouter();
+  const { token } = useAuth();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-	const router = useRouter();
+  const { iconIndex, title, fromServerId, isServerCard } = useLocalSearchParams<{
+    iconIndex?: string;
+    title?: string;
+    fromServerId?: string;
+    isServerCard?: string;
+  }>();
 
-	const [showCenterImage, setShowCenterImage] = useState(false);
-	const fadeAnim = useRef(new Animated.Value(0)).current;
+  const serverCardFlag = !!fromServerId;
+  const index = Number(iconIndex) || 0;
 
-	const { iconIndex, title } = useLocalSearchParams<{ iconIndex?: string; title?: string }>();
-	const index = Number(iconIndex) || 0;
-	const routineName = title || "루틴 이름 없음";
+  const [showCenterImage, setShowCenterImage] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [cardData, setCardData] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false); // 삭제 중 상태
 
-	const [modalVisible, setModalVisible] = useState(false);
+  const detailMap: Record<number, any> = {
+    0: require("../assets/images/detail0.png"),
+    1: require("../assets/images/detail1.png"),
+    2: require("../assets/images/detail2.png"),
+    3: require("../assets/images/detail3.png"),
+    4: require("../assets/images/detail4.png"),
+    5: require("../assets/images/detail5.png"),
+    6: require("../assets/images/detail6.png"),
+  };
 
-	const detailMap: Record<number, any> = {
-	0: require("../assets/images/detail0.png"),
-	1: require("../assets/images/detail1.png"),
-	2: require("../assets/images/detail2.png"),
-	3: require("../assets/images/detail3.png"),
-	4: require("../assets/images/detail4.png"),
-	5: require("../assets/images/detail5.png"),
-	6: require("../assets/images/detail6.png"),
-	};
+  const growthMessageMap = [
+    "당신의 마음을 간직한 씨앗이에요!\n꾸준히 노력하면 씨앗이 열려요",
+    "처음으로 싹을 틔운 순간이에요!\n포기하지 않은 의지가 빛나고 있어요",
+    "단단히 뿌리내리고 서 있는 순간이에요!\n흔들림 없는 노력이 든든한 힘이 되었어요",
+    "꽃이 맺히며 기대를 품고 있어요!\n정성과 열정이 아름답게 피어나려 해요",
+    "처음으로 싹을 틔운 순간이에요!\n포기하지 않은 의지가 빛나고 있어요",
+    "단단히 뿌리내리고 서 있는 순간이에요!\n흔들림 없는 노력이 든든한 힘이 되었어요",
+    "꽃이 맺히며 기대를 품고 있어요!\n정성과 열정이 아름답게 피어나려 해요",
+  ];
+  const growthLevelMap = [
+    "Lv.1 꿈꾸는 씨앗",
+    "Lv.2 뿌리내린 새싹",
+    "Lv.3 흔들리지 않는 줄기",
+    "Lv.4 피어나는 꽃봉오리",
+    "Lv.2 뿌리내린 새싹",
+    "Lv.3 흔들리지 않는 줄기",
+    "Lv.4 피어나는 꽃봉오리",
+  ];
 
-	useEffect(() => {
-		const timer = setTimeout(() => {
-		setShowCenterImage(true);
-		}, 2500);
-		return () => clearTimeout(timer);
-	}, []);
+  useEffect(() => {
+    if (!serverCardFlag) {
+      // 로컬 카드
+      setCardData({
+        level: index,
+        routineTitle: title || "루틴 이름 없음",
+        plantName: "로컬 카드",
+        startDate: "2024.12.03",
+        endDate: "2025.12.03",
+        repeatDays: ["월", "수"],
+        emoji: "🌱",
+      });
+      return;
+    }
 
-	// fade-in 애니메이션
-	useEffect(() => {
-		if (showCenterImage) {
-		Animated.timing(fadeAnim, {
-			toValue: 1,
-			duration: 1000,
-			useNativeDriver: true,
-		}).start();
-		}
-	}, [showCenterImage]);
+	const weekMap = ["일", "월", "화", "수", "목", "금", "토"];
+
+    // 서버 카드
+    const fetchCard = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch("http://3.37.215.53:8080/cultivations/user", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data: any[] = await res.json();
+        const selected = data.find(d => d.id === Number(fromServerId));
+        if (selected) {
+			setCardData({
+			...selected,
+			emoji: selected.emoji && selected.emoji !== "?" ? selected.emoji : "🌱",
+			level: selected.level ?? 0,
+			routineTitle: selected.routineTitle || selected.title || "루틴 이름 없음",
+			startDate: selected.startDate || "2024.12.03",
+			endDate: selected.endDate || "2025.12.03",
+			repeatDays: selected.repeatDays
+				? selected.repeatDays.map((d: number | string) => weekMap[Number(d)]) // 숫자든 문자열이든 숫자로 변환
+				: ["월", "수"],
+			plantName: selected.plantName || "서버에서 넘어옴",
+			});
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchCard();
+  }, [fromServerId, token, serverCardFlag, index, title]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowCenterImage(true), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (showCenterImage) {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }).start();
+    }
+  }, [showCenterImage]);
+
+  if (!cardData) return null;
+  const level = cardData.level ?? 0;
+
+  const middleImageStyle = fromServerId
+  ? { width: 440, height: 340, top: 60, left: 12 } // 서버 카드용
+  : { width: 340, height: 320, top: 60, left: 36 }; // 로컬 카드용
+
+  const handleDeleteRoutine = async () => {
+  if (!token || !cardData?.routineId) return;
+  setIsDeleting(true);
+
+  console.log("루틴 삭제 시도, cardData:", cardData);
+
+  try {
+    const res = await fetch("http://3.37.215.53:8080/routines/delete", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ routineId: cardData.routineId }),
+    });
+
+    if (res.status === 204) {
+      console.log("루틴 삭제 성공");
+    } else {
+      const text = await res.text();
+      console.log("루틴 삭제 서버 응답:", text);
+      if (!res.ok) throw new Error(text || "루틴 삭제 실패");
+    }
+
+    setModalVisible(false);
+    setIsDeleting(false);
+
+    // 삭제 후 목록 강제 갱신
+    router.replace({
+      pathname: "/cultivate",
+      params: { refresh: Date.now() }, // timestamp로 강제 갱신
+    });
+
+  } catch (err) {
+    console.error("루틴 삭제 실패:", err);
+    alert("루틴 삭제 중 오류가 발생했습니다.");
+    setIsDeleting(false);
+  }
+};
 
 
-	// index에 따라 문구 설정
-	let growthMessage = "";
-	let growthLevel = "";
 
-	if (index === 0) {
-	growthMessage = `당신의 마음을 간직한 씨앗이에요!\n꾸준히 노력하면 씨앗이 열려요`;
-	growthLevel = "Lv.1 꿈꾸는 씨앗";
-	} else if (index === 1 || index === 4) {
-	growthMessage = `처음으로 싹을 틔운 순간이에요!\n포기하지 않은 의지가 빛나고 있어요`;
-	growthLevel = "Lv.2 뿌리내린 새싹";
-	} else if (index === 2 || index === 5) {
-	growthMessage = `단단히 뿌리내리고 서 있는 순간이에요!\n흔들림 없는 노력이 든든한 힘이 되었어요`;
-	growthLevel = "Lv.3 흔들리지 않는 줄기";
-	} else if (index === 3 || index === 6) {
-	growthMessage = `꽃이 맺히며 기대를 품고 있어요!\n정성과 열정이 아름답게 피어나려 해요`;
-	growthLevel = "Lv.4 피어나는 꽃봉오리";
-	}
-      	return (
-			    <ImageBackground
-					source={require("../assets/images/cultivatebackground.png")} // ✅ 배경 이미지 경로
-					style={styles.viewBg} // 기존 viewBg 그대로 사용
-					resizeMode="cover" // cover, contain, stretch 중 선택 가능
-					>
-      			<View>
-				<Image
-				source={require("../assets/images/rainbow.png")}
-				style={{
-					position: "absolute",
-					top: 80, // ✅ 이미지 width 120의 절반
-					width: 300,
-					height: 300,
-					left: 60
-				}}
-				resizeMode="contain"
-				/>
-				<Image
-				source={detailMap[index]}  // ✅ iconIndex에 따라 detail 이미지 선택
-				style={{
-					position: "absolute",
-					top: 208,
-					width: 132,
-					height: 132,
-					left: "35%"
-				}}
-				resizeMode="contain"
-				/>
-				{showCenterImage && (
-				<Animated.Image
-					source={require("../assets/images/bubble-great.png")}
-					style={[styles.centerImage, { opacity: fadeAnim }]}
-					resizeMode="contain"
-				/>
-				)}
-        				<View style={styles.child} />
-        				<Text style={styles.text}>{routineName}</Text>
-        				<Text style={[styles.safeareaviewText, styles.textPosition2]}>기간 :</Text>
-        				<Text style={[styles.text2, styles.textPosition2]}>2024.12.03-2025.12.03</Text>
-        				<Text style={[styles.text3, styles.textPosition1]}>주기 :</Text>
-        				<Text style={[styles.text4, styles.textPosition1]}>매주 월 수</Text>
-        				<Text style={[styles.text5, styles.textPosition]}>씨앗 :</Text>
-        				<Text style={[styles.text6, styles.textPosition]}>백합과</Text>
-						<Text style={[styles.text7, styles.textClr]}>{growthMessage}</Text>
-						<Text style={[styles.lv2, styles.lv2Typo]}>{growthLevel}</Text>
-        				<Text style={[styles.text9, styles.textTypo]}>다음 성장까지</Text>
-        				<Text style={[styles.text10, styles.textTypo]}>50%</Text>
-						<ImageBackground style={[styles.item]}
-							source={require("../assets/images/bar0.png")}
-							resizeMode="contain"
-						/>
-						<Image style={[styles.itemm]}
-							source={require("../assets/images/bar-rainbow.png")}
-							resizeMode="contain"
-						/>
-						<Pressable
-						style={styles.stopRoutineButton}
-						onPress={() => setModalVisible(true)}
-						>
-						<Image
-							style={styles.stopRoutineIcon}
-							source={require("../assets/images/icon-erase.png")}
-							resizeMode="contain"
-						/>
-						<Text style={styles.stopRoutineText}>루틴 그만하기</Text>
-						</Pressable>
-						<Pressable style={[styles.iconBack, styles.wrapPosition]} onPress={()=> router.push("/cultivate")}>
-						<Image style={styles.icon} resizeMode="contain" source={require("../assets/images/icon-back.png")} />
-						</Pressable>
-      			</View>
-				<Modal
-					visible={modalVisible}
-					transparent
-					animationType="fade"
-					onRequestClose={() => setModalVisible(false)}
-					>
-					<View style={styles.modalOverlay}>
-						<View style={styles.modalContainer}>
-						<Text style={styles.modalTitle}>루틴을 정말 그만하시겠어요?</Text>
-						<Text style={styles.modalMessage}>
-							지금까지의 성장 기록이 모두 사라집니다.
-						</Text>
-						<View style={styles.modalButtonRow}>
-							<Pressable
-							style={[styles.modalButton, styles.cancelButton]}
-							onPress={() => setModalVisible(false)}
-							>
-							<Text style={styles.modalButtonText}>취소</Text>
-							</Pressable>
-							<Pressable
-							style={[styles.modalButton, styles.confirmButton]}
-							onPress={() => {
-								setModalVisible(false);
-								router.push("/cultivate"); // ✅ "그만하기" 후 이동 (필요 없으면 제거 가능)
-							}}
-							>
-							<Text style={[styles.modalButtonText, { color: "#fff" }]}>
-								그만하기
-							</Text>
-							</Pressable>
-						</View>
-						</View>
-					</View>
-					</Modal>
-			</ImageBackground>
-			
-    );
+
+
+  return (
+		<ImageBackground
+		source={require("../assets/images/cultivatebackground.png")} // ✅ 배경 고정
+		style={styles.viewBg}
+		resizeMode="cover"
+		>
+      <View>
+        {/* 중간 이미지 */}
+    <Image
+      source={
+        fromServerId
+          ? require("../assets/images/cloud.png") // 서버 카드일 때
+          : require("../assets/images/rainbow.png")  // 로컬 카드일 때
+      }
+		style={[{ position: "absolute" }, middleImageStyle]}
+      resizeMode="contain"
+    />
+
+        {/* 상세 이미지 */}
+        <Image
+          source={detailMap[level]}
+          style={{
+            position: "absolute",
+            top: 212,
+            width: 132,
+            height: 132,
+            left: "35%",
+          }}
+          resizeMode="contain"
+        />
+
+        {/* 버블 이미지 */}
+        {showCenterImage && (
+  <Animated.Image
+    source={
+      fromServerId
+        ? require("../assets/images/bubble-soso.png") // 서버 카드일 때
+        : require("../assets/images/bubble-great.png") // 로컬 카드일 때
+    }
+    style={[styles.centerImage, { opacity: fadeAnim }]}
+    resizeMode="contain"
+  />
+)}
+
+
+        {/* 텍스트 */}
+        <View style={styles.child} />
+        <Text style={styles.text}>{cardData.routineTitle}</Text>
+        <Text style={[styles.safeareaviewText, styles.textPosition2]}>기간:</Text>
+        <Text style={[styles.text2, styles.textPosition2]}>
+          {cardData.startDate} - {cardData.endDate}
+        </Text>
+        <Text style={[styles.text3, styles.textPosition1]}>주기:</Text>
+        <Text style={[styles.text4, styles.textPosition1]}>
+          매주 {cardData.repeatDays?.join(" ")}
+        </Text>
+        <Text style={[styles.text5, styles.textPosition]}>씨앗:</Text>
+        <Text style={[styles.text6, styles.textPosition]}>{cardData.plantName}</Text>
+        <Text style={[styles.text7, styles.textClr]}>
+          {growthMessageMap[level]}
+        </Text>
+        <Text style={[styles.lv2, styles.lv2Typo]}>
+          {growthLevelMap[level]}
+        </Text>
+		{/* 진행 바 */}
+		{!serverCardFlag ? (
+		<>
+			<Text style={[styles.text9, styles.textTypo]}>다음 성장까지</Text>
+			<Text style={[styles.text10, styles.textTypo]}>50%</Text>
+			<ImageBackground
+			style={[styles.item]}
+			source={require("../assets/images/bar0.png")}
+			resizeMode="contain"
+			/>
+			<Image
+			style={[styles.itemm]}
+			source={require("../assets/images/bar-rainbow.png")}
+			resizeMode="contain"
+			/>
+		</>
+		) : (
+		<>
+			<Text style={[styles.text9, styles.textTypo]}>다음 성장까지</Text>
+			<Text style={[styles.text10, styles.textTypo]}>0%</Text>
+			<ImageBackground
+			style={[styles.item]}
+			source={require("../assets/images/bar0.png")}
+			resizeMode="contain"
+			/>
+		</>
+		)}
+		{serverCardFlag && ( // 서버 카드일 때
+		<>
+			<Text style={[styles.text9, styles.textTypo]}>다음 성장까지</Text>
+			<Text style={[styles.text10, styles.textTypo]}>0%</Text>
+		</>
+		)}
+
+
+        {/* 루틴 그만하기 버튼 */}
+        <Pressable style={styles.stopRoutineButton} onPress={() => setModalVisible(true)}>
+          <Image
+            style={styles.stopRoutineIcon}
+            source={require("../assets/images/icon-erase.png")}
+            resizeMode="contain"
+          />
+          <Text style={styles.stopRoutineText}>루틴 그만하기</Text>
+        </Pressable>
+
+        {/* 뒤로가기 */}
+        <Pressable style={[styles.iconBack, styles.wrapPosition]} onPress={() => router.push("/cultivate")} hitSlop={10}>
+          <Image style={styles.icon} resizeMode="contain" source={require("../assets/images/icon-back.png")} />
+        </Pressable>
+
+        {/* 모달 */}
+        <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>루틴을 정말 그만하시겠어요?</Text>
+              <Text style={styles.modalMessage}>지금까지의 성장 기록이 모두 사라집니다.</Text>
+              <View style={styles.modalButtonRow}>
+                <Pressable style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
+                  <Text style={styles.modalButtonText}>취소</Text>
+                </Pressable>
+				<Pressable
+				style={[styles.modalButton, styles.confirmButton]}
+				onPress={handleDeleteRoutine}
+				>
+				<Text style={[styles.modalButtonText, { color: "#fff" }]}>그만하기</Text>
+				</Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </ImageBackground>
+  );
 }
+
 
 
 const styles = StyleSheet.create({
@@ -237,7 +368,7 @@ const styles = StyleSheet.create({
 			fontWeight: "600"
   	},
   	child: {
-    		marginLeft: -180,
+    		marginLeft:-180,
     		top: 360,
     		borderTopLeftRadius: 30,
     		borderTopRightRadius: 30,
@@ -245,7 +376,7 @@ const styles = StyleSheet.create({
     		width: 360,
     		height: 520,
     		left: "50%",
-    		position: "absolute"
+    		position: "absolute",
   	},
   	text: {
     		top: 392,
@@ -334,7 +465,8 @@ const styles = StyleSheet.create({
 		width: 120,
 		height: 100,
 		marginLeft: 148,
-		marginTop: 132 // height / 2
+		marginTop: 120,
+		zIndex:10
 		},
 		modalOverlay: {
   flex: 1,
