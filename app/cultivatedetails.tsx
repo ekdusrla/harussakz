@@ -58,9 +58,9 @@ export default function CultivateDetails() {
       setCardData({
         level: index,
         routineTitle: title || "루틴 이름 없음",
-        plantName: "로컬 카드",
-        startDate: "2024.12.03",
-        endDate: "2025.12.03",
+        plantName: "백합과",
+        startDate: "2025-06-03",
+        endDate: "2025-12-03",
         repeatDays: ["월", "수"],
         emoji: "🌱",
       });
@@ -212,7 +212,7 @@ export default function CultivateDetails() {
         <Text style={styles.text}>{cardData.routineTitle}</Text>
         <Text style={[styles.safeareaviewText, styles.textPosition2]}>기간:</Text>
         <Text style={[styles.text2, styles.textPosition2]}>
-          {cardData.startDate} - {cardData.endDate}
+          {cardData.startDate} ~ {cardData.endDate}
         </Text>
         <Text style={[styles.text3, styles.textPosition1]}>주기:</Text>
         <Text style={[styles.text4, styles.textPosition1]}>
