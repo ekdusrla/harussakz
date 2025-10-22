@@ -107,7 +107,7 @@ export default function Cultivate() {
         {/* 도움말 */}
         <View style={{ position: "relative" }}>
           <Pressable onPress={() => setIsTooltipVisible(p => !p)} style={styles.iconGridCalendar}>
-            <Image style={styles.item} width={24} height={24} source={require("../../assets/images/icon-question.png")} resizeMode="contain" />
+            <Image style={styles.item} width={28} height={28} source={require("../../assets/images/icon-question.png")} resizeMode="contain" />
           </Pressable>
           {isTooltipVisible && <Image source={require("../../assets/images/questionbubble.png")} style={styles.tooltipImage} resizeMode="contain" />}
         </View>

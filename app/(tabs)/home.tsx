@@ -74,7 +74,7 @@ export default function Home() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        <WebView source={{ uri: "https://terrarium-web-gl-for-homescreen.vercel.app/" }} // Unity 빌드한 주소 
+        <WebView source={{ uri: "https://harussak-unity-to-webgl.netlify.app/" }} // Unity 빌드한 주소 
         style={{ flex: 1 }} 
         allowsInlineMediaPlayback javaScriptEnabled domStorageEnabled />
       </View>
