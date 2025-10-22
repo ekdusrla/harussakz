@@ -35,13 +35,13 @@ export default function RoutineDetails() {
                         </View>
                         <View style={styles.vieww}>
                             <Text style={[styles.text5, styles.textTypo1]}>설정기간</Text>
-                            <Text style={[styles.text7, styles.textFlexBox1]}>날이 좋아서</Text>
+                            <Text style={[styles.text7, styles.textFlexBox1]}>2025.09.16 ~ 2025.10.10</Text>
                             <Text style={[styles.text4, styles.textPosition3]}>완수기간</Text>
-                            <Text style={[styles.text6, styles.textFlexBox1]}>날이 좋지 않아서</Text>
+                            <Text style={[styles.text6, styles.textFlexBox1]}>2025.09.16 ~ 2025.10.20</Text>
                             <Text style={[styles.text8, styles.textPosition2]}>주기</Text>
-                            <Text style={[styles.text9, styles.textPosition5]}>그 모든 어쩌구...</Text>
+                            <Text style={[styles.text9, styles.textPosition5]}>매주 월 수 금</Text>
                             <Text style={[styles.text10, styles.textPosition1]}>감정</Text>
-                            <Text style={[styles.text11, styles.textPosition6]}>으아악</Text>
+                            <Text style={[styles.text11, styles.textPosition6]}>용기</Text>
                             <View style={[styles.child1]} />
                             <View style={[styles.child2]} />
                             <View style={[styles.child3]} />
