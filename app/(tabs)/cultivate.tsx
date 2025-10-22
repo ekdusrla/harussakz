@@ -1,29 +1,111 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Cultivate() {
-
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const router = useRouter();
+  const { token } = useAuth();
 
-  // 카드에 들어갈 데이터
-const cards = [
-  { id: 1, emoji: "📖", title: "(예시)도서 30분 읽기", dday: "D-123", icon: require("../../assets/images/growth0.png"), iconIndex: 0 },
-  { id: 2, emoji: "💊", title: "(예시)영양제 섭취", dday: "D-100", icon: require("../../assets/images/growth1.png"), iconIndex: 1 },
-  { id: 3, emoji: "🚶", title: "(예시)산책 1시간 하기", dday: "D-78", icon: require("../../assets/images/growth2.png"), iconIndex: 2 },
-  { id: 4, emoji: "👤", title: "(예시)오늘도 우렁차게 살아남기", dday: "D-54", icon: require("../../assets/images/growth3.png"), iconIndex: 3 },
-  { id: 5, emoji: "🌞", title: "(예시)오전 9시에 일어나기", dday: "D-42", icon: require("../../assets/images/growth4.png"), iconIndex: 4 },
-  { id: 6, emoji: "🌛", title: "(예시)오후 10시에 잠들기", dday: "D-21", icon: require("../../assets/images/growth5.png"), iconIndex: 5 },
-  { id: 7, emoji: "🌞", title: "(예시)쾌변하기", dday: "D-13", icon: require("../../assets/images/growth6.png"), iconIndex: 6 },
-];
+  // ✅ 카드 타입 정의
+  type Card = {
+    id: number;
+    emoji: string;
+    title: string;
+    dday: string;
+    icon: any;
+    iconIndex: number;
+  };
 
+  // ✅ 로컬 카드 (예시 카드 유지)
+  const [cards] = useState<Card[]>([
+    { id: 1, emoji: "📖", title: "(예시)도서 30분 읽기", dday: "D-123", icon: require("../../assets/images/growth0.png"), iconIndex: 0 },
+    { id: 2, emoji: "💊", title: "(예시)영양제 섭취", dday: "D-100", icon: require("../../assets/images/growth1.png"), iconIndex: 1 },
+    { id: 3, emoji: "🚶", title: "(예시)산책 1시간 하기", dday: "D-78", icon: require("../../assets/images/growth2.png"), iconIndex: 2 },
+    { id: 4, emoji: "👤", title: "(예시)오늘도 우렁차게 살아남기", dday: "D-54", icon: require("../../assets/images/growth3.png"), iconIndex: 3 },
+    { id: 5, emoji: "🌞", title: "(예시)오전 9시에 일어나기", dday: "D-42", icon: require("../../assets/images/growth4.png"), iconIndex: 4 },
+    { id: 6, emoji: "🌛", title: "(예시)오후 10시에 잠들기", dday: "D-21", icon: require("../../assets/images/growth5.png"), iconIndex: 5 },
+    { id: 7, emoji: "🌞", title: "(예시)쾌변하기", dday: "D-13", icon: require("../../assets/images/growth6.png"), iconIndex: 6 },
+  ]);
+
+  // ✅ 서버 카드 타입 & state
+  type Cultivation = {
+    id: number;
+    userId: number;
+    plantId: number;
+    plantName: string;
+    routineId: number;
+    routineTitle: string;
+    emoji: string;
+    startDate: string;
+    endDate: string;
+    diary: string;
+    level: number;
+    imageUrl: string;
+  };
+
+  const [serverCards, setServerCards] = useState<Card[]>([]); // ✅ 타입 지정 완료
+
+  // ✅ D-Day 계산 함수
+  const calcDday = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return diff >= 0 ? diff : 0;
+  };
+
+  // ✅ 성장 이미지 선택 함수 (require 동적 호출 불가 → 정적 매핑)
+  const getGrowthImage = (level: number) => {
+    const images = [
+      require("../../assets/images/growth0.png"),
+      require("../../assets/images/growth1.png"),
+      require("../../assets/images/growth2.png"),
+      require("../../assets/images/growth3.png"),
+      require("../../assets/images/growth4.png"),
+      require("../../assets/images/growth5.png"),
+      require("../../assets/images/growth6.png"),
+    ];
+    return images[level] || images[0];
+  };
+
+  // ✅ 서버 데이터 불러오기
+  useEffect(() => {
+    const fetchCultivations = async () => {
+      try {
+        const res = await fetch("http://3.37.215.53:8080/cultivations/user", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "*/*",
+          },
+        });
+
+        if (!res.ok) throw new Error("서버 응답 오류");
+        const data: Cultivation[] = await res.json();
+
+        const mapped: Card[] = data.map((item) => ({
+          id: item.id,
+          emoji: item.emoji && item.emoji.length > 0 ? item.emoji : "🌱",
+          title: item.routineTitle || item.plantName || "이름 없음",
+          dday: item.endDate ? `D-${calcDday(item.endDate)}` : "진행중",
+          icon: getGrowthImage(item.level),
+          iconIndex: item.level,
+        }));
+
+        setServerCards(mapped);
+      } catch (err) {
+        console.error("재배 목록 불러오기 실패:", err);
+      }
+    };
+
+    if (token) fetchCultivations();
+  }, [token]);
 
   return (
     <View style={styles.safeareaview}>
-      {/* 카드 리스트 */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        
+        {/* 씨앗 개수 표시 */}
         <View style={[styles.view2, styles.viewFlexBox]}>
           <Image
             style={styles.item}
@@ -37,12 +119,9 @@ const cards = [
           </View>
         </View>
 
+        {/* 도움말 */}
         <View style={{ position: "relative" }}>
-          {/* ❓ 질문 아이콘 버튼 */}
-          <Pressable
-            onPress={() => setIsTooltipVisible((prev) => !prev)}
-            style={[styles.iconGridCalendar, styles.d2Parent2Layout]}
-          >
+          <Pressable onPress={() => setIsTooltipVisible((p) => !p)} style={styles.iconGridCalendar}>
             <Image
               style={styles.item}
               width={24}
@@ -52,9 +131,8 @@ const cards = [
             />
           </Pressable>
 
-          {/* 💬 말풍선 */}
           {isTooltipVisible && (
-            <ImageBackground
+            <Image
               source={require("../../assets/images/questionbubble.png")}
               style={styles.tooltipImage}
               resizeMode="contain"
@@ -62,10 +140,7 @@ const cards = [
           )}
         </View>
 
-        {/* 상단 바 */}
-        <View style={styles.topBar}></View>
-
-        {/* 제목 */}
+        {/* 타이틀 */}
         <Text style={styles.title}>나의 정원</Text>
         <Text style={styles.subtitle}>식물과 함께 성장하는 우리의 하루</Text>
         <Image
@@ -76,34 +151,30 @@ const cards = [
           source={require("../../assets/images/ground.png")}
         />
 
-        {/* ✅ 카드 리스트 렌더링 */}
+        {/* ✅ 카드 리스트 (예시 + 서버 카드 모두 표시) */}
         <View style={styles.cardContainer}>
-          {cards.map((card) => (
+          {[...cards, ...serverCards].map((card) => (
             <Pressable
-              key={card.id}
+              key={`${card.id}-${card.title}`}
               onPress={() =>
                 router.push({
                   pathname: "/cultivatedetails",
-                  params: { 
-                    iconIndex: card.iconIndex.toString(), // 이미지용
-                    title: card.title,             // 루틴 이름 전달
-                  }, // ✅ 이미지 번호 전달
+                  params: {
+                    iconIndex: card.iconIndex.toString(),
+                    title: card.title,
+                  },
                 })
               }
-              style={({ pressed }) => [
-                styles.card,
-                pressed && { opacity: 0.7 }, // 눌렀을 때 시각적 피드백
-              ]}
+              style={({ pressed }) => [styles.card, pressed && { opacity: 0.7 }]}
             >
               <View style={styles.cardHeader}>
                 <View style={styles.emojiCircle}>
-                  <Text style={styles.emoji}>{card.emoji}</Text>
+                  <Text style={{fontSize: 16}}>{card.emoji}</Text>
                 </View>
                 <Text style={styles.dday}>{card.dday}</Text>
               </View>
 
               <Image source={card.icon} style={styles.cardImage} resizeMode="contain" />
-              
               <Text style={styles.cardTitle}>
                 {card.title.length > 7 ? card.title.slice(0, 7) + "…" : card.title}
               </Text>
@@ -133,7 +204,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#26282c",
     textAlign: "center",
-    marginTop: 24,
+    marginTop: 80,
     fontFamily: "NanumSquareNeo-Eb",
   },
   subtitle: {
@@ -182,9 +253,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
-  },
-  emoji: {
-    fontSize: 16,
   },
   cardImage: {
     width: 100,

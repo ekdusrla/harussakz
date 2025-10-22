@@ -24,6 +24,7 @@ export default function GenerateRoutine2() {
         };
         loadRoutines();
     }, []);
+    
 
     return (
         <View style={styles.safeareaview}>

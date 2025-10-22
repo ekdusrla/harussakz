@@ -376,6 +376,7 @@ const styles = StyleSheet.create({
             lineHeight: 22,
             letterSpacing: -0.43,
             fontSize: 16,
+            left:108,
             top: "50%",
             fontFamily: "NanumSquareNeo-Bd",
             fontWeight: "600",
