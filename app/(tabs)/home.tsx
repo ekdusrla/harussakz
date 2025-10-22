@@ -1,52 +1,73 @@
+import { useFocusEffect } from "@react-navigation/native"; // 화면 포커스 체크
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Image, ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
-import { WebView, } from "react-native-webview";
+import { WebView } from "react-native-webview";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Home() {
   const router = useRouter();
+  const { token } = useAuth();
+
+  const [serverRoutines, setServerRoutines] = useState<{ id: number; routine: string; completed: boolean }[]>([]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const opacity = useRef(new Animated.Value(0)).current;
 
-    // 👇 위치도 배열로 관리 (top/left를 원하는 좌표로 바꾸면 됨)
   const positions = [
     { top: -640, left: 60 },
     { top: -680, left: 260 },
   ];
 
-  // 두 개의 이미지 배열로 관리
   const images = [
     require("../../assets/images/homebubble-cheerup.png"),
     require("../../assets/images/homebubble-good.png"),
   ];
 
-useEffect(() => {
-  const showImage = () => {
-    // 페이드인
-    Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+  useEffect(() => {
+    const showImage = () => {
+      Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+      setCurrentIndex((prev) => (prev === 0 ? 1 : 0));
+      setTimeout(() => {
+        Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }).start();
+      }, 5000);
+    };
 
-    // 인덱스 바꾸기
-    setCurrentIndex((prev) => (prev === 0 ? 1 : 0));
+    const initialTimeout = setTimeout(showImage, 10000);
+    const interval = setInterval(showImage, 10000);
 
-    // 5초 후 페이드아웃
-    setTimeout(() => {
-      Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }).start();
-    }, 5000);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // 서버에서 루틴 가져오기 (Home 화면 포커스 시마다)
+  const fetchServerRoutines = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`http://3.37.215.53:8080/routines/by-date/${new Date().toISOString().slice(0, 10)}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "*/*" },
+      });
+      const data = await res.json();
+      setServerRoutines(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("루틴 조회 실패", e);
+      setServerRoutines([]);
+    }
   };
 
-  // 5초 뒤 첫 실행
-  const initialTimeout = setTimeout(showImage, 10000);
+  // 화면이 포커스될 때마다 서버 호출
+  useFocusEffect(
+    useCallback(() => {
+      fetchServerRoutines();
+    }, [token])
+  );
 
-  // 이후 10초마다 반복
-  const interval = setInterval(showImage, 10000);
-
-  return () => {
-    clearTimeout(initialTimeout);
-    clearInterval(interval);
-  };
-}, []);
-
+  // 오늘 날짜 루틴 개수 계산
+  const totalTodayRoutines = serverRoutines.length;
+  const completedRoutines = serverRoutines.filter(r => r.completed).length;
+  const remainingRoutines = totalTodayRoutines - completedRoutines;
 
 
 
@@ -123,7 +144,7 @@ useEffect(() => {
           }}
           resizeMode="contain"
         >
-          <Text style={styles.text1}>남은 루틴 : 7개</Text>
+          <Text style={styles.text1}>남은 루틴 : {remainingRoutines}개</Text>
         </ImageBackground>
         </View>    
     </View>
