@@ -103,7 +103,7 @@ if (res.ok) {
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="비밀번호(8자 이상, 문자/숫자/기호)"
+              placeholder="비밀번호(문자/숫자/기호)"
               placeholderTextColor="#74777D"
               secureTextEntry={!showPassword}
               style={[styles.text, styles.textPosition, { color: "#1C1E1F" }]}

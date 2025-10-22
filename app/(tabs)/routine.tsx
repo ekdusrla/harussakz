@@ -30,10 +30,10 @@ export default function Routine() {
   });
 
   const growthRoutines = [
-    "산책하기 (성장 1단계)",
-    "오전 9시에 일어나기 (성장 2단계)",
-    "아침에 쾌변하기 (성장 3단계)",
-    "오늘도 우렁차게 살아남기 (성장 4단계)"
+    "(예시)산책하기 (성장 1단계)",
+    "(예시)오전 9시에 일어나기 (성장 2단계)",
+    "(예시)아침에 쾌변하기 (성장 3단계)",
+    "(예시)오늘도 우렁차게 살아남기 (성장 4단계)"
   ];
 
   const checkImages = [
@@ -42,6 +42,7 @@ export default function Routine() {
     require("../../assets/images/icon-pinkcheck.png"),
     require("../../assets/images/icon-greencheck.png")
   ];
+
 
   const [checkedImages, setCheckedImages] = useState<(number | null)[]>([]);
   const [popupVisible, setPopupVisible] = useState(false);
@@ -68,32 +69,38 @@ export default function Routine() {
 
   // 서버에서 날짜별 루틴 가져오기
   useEffect(() => {
-  const fetchRoutines = async () => {
-    if (!token) return;
+const fetchRoutines = async () => {
+  if (!token) return;
 
-    try {
-      const dateStr = `${selectedDateObj.year}-${String(selectedDateObj.month).padStart(2,'0')}-${String(selectedDateObj.date).padStart(2,'0')}`;
-      const res = await fetch(`http://3.37.215.53:8080/routines/by-date/${dateStr}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "*/*",
-        },
-      });
+  try {
+    const dateStr = `${selectedDateObj.year}-${String(selectedDateObj.month).padStart(2, '0')}-${String(selectedDateObj.date).padStart(2, '0')}`;
+    const res = await fetch(`http://3.37.215.53:8080/routines/by-date/${dateStr}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "*/*",
+      },
+    });
 
-      const data = await res.json();
+    const data = await res.json();
+    const routinesArr = Array.isArray(data) ? data : [];
+    setServerRoutines(routinesArr);
 
-      const routinesArr = Array.isArray(data) ? data : [];
-      setServerRoutines(routinesArr);
+    // ✅ 체크 상태 초기화 (서버 루틴의 completed 반영)
+    setCheckedImages([
+      ...growthRoutines.map(() => null),
+      ...routinesArr.map(r =>
+        r.completed
+          ? checkImages[Math.floor(Math.random() * checkImages.length)]
+          : null
+      ),
+    ]);
+  } catch (e) {
+    console.error("루틴 조회 실패", e);
+    setServerRoutines([]);
+    setCheckedImages([...growthRoutines].map(() => null));
+  }
+};
 
-      // 체크 상태 초기화
-      setCheckedImages([...growthRoutines, ...routinesArr.map(r => r.routine)].map(() => null));
-
-    } catch (e) {
-      console.error("루틴 조회 실패", e);
-      setServerRoutines([]);
-      setCheckedImages([...growthRoutines].map(() => null));
-    }
-  };
 
   fetchRoutines();
 }, [selectedDateObj, token]);
@@ -102,66 +109,101 @@ const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
 
 
 
-  const toggleCheck = (index: number) => {
+  const toggleCheck = async (index: number) => {
+  const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
+  const routineName = allRoutines[index];
+  const isGrowthRoutine = growthRoutines.includes(routineName);
+
+  // ✅ 1️⃣ 성장 루틴이면 기존 로컬 토글 로직 유지
+  if (isGrowthRoutine) {
     const newCheckedImages = [...checkedImages];
-    const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
-    const routineName = allRoutines[index];
-
-    const isGrowthRoutine = growthRoutines.includes(routineName);
-
     if (!newCheckedImages[index]) {
       newCheckedImages[index] = checkImages[Math.floor(Math.random() * checkImages.length)];
-      if (isGrowthRoutine) {
-        setPrePopupStep(0);
-        setPrePopupVisible(true);
-        setNextPopupIndex(index);
-      }
+      setCheckedImages(newCheckedImages);
+
+      setPrePopupStep(0);
+      setPrePopupVisible(true);
+      setNextPopupIndex(index);
     } else {
       newCheckedImages[index] = null;
+      setCheckedImages(newCheckedImages);
     }
+    return;
+  }
 
+  // ✅ 2️⃣ 서버 루틴이면 PATCH 요청 보내기
+  try {
+    const serverIndex = index - growthRoutines.length; // 서버 루틴의 실제 인덱스
+    const routineId = serverRoutines[serverIndex].id;
+
+    const res = await fetch(`http://3.37.215.53:8080/routines/${routineId}/complete`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "*/*",
+      },
+    });
+
+    if (!res.ok) throw new Error("루틴 완료 상태 변경 실패");
+
+    // 서버 응답 후 로컬 상태 갱신
+    const updated = [...serverRoutines];
+    updated[serverIndex].completed = !updated[serverIndex].completed;
+    setServerRoutines(updated);
+
+    // 체크 이미지 갱신
+    const newCheckedImages = [...checkedImages];
+    newCheckedImages[index] = updated[serverIndex].completed
+      ? checkImages[Math.floor(Math.random() * checkImages.length)]
+      : null;
     setCheckedImages(newCheckedImages);
-  };
 
-  const handlePrePopupPress = () => {
-    if (prePopupStep === 0) {
+  } catch (err) {
+    console.error("루틴 완료/취소 실패:", err);
+  }
+};
+
+const handlePrePopupPress = () => {
+  if (prePopupStep === 0) {
+    Animated.timing(textOpacity, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setPrePopupStep(1);
       Animated.timing(textOpacity, {
-        toValue: 0,
+        toValue: 1,
         duration: 300,
-        useNativeDriver: true
-      }).start(() => {
-        setPrePopupStep(1);
-        Animated.timing(textOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true
-        }).start();
-      });
-    } else {
-      setPrePopupVisible(false);
-      if (nextPopupIndex !== null) {
-        const routineName = [...growthRoutines, ...serverRoutines.map(r => r.routine)][nextPopupIndex];
-        if (routineName === growthRoutines[0]) {
-          setPopupImage(require("../../assets/images/growpopup1.png"));
-          setPopupTitle("뿌리내린 새싹");
-          setPopupMessage("처음으로 싹을 틔운 순간이에요!\n포기하지 않은 의지가 빛나고 있어요");
-        } else if (routineName === growthRoutines[1]) {
-          setPopupImage(require("../../assets/images/growpopup2.png"));
-          setPopupTitle("흔들리지 않는 줄기");
-          setPopupMessage("단단히 뿌리내리고 서 있는 순간이에요!\n흔들림 없는 노력이 든든한 힘이 되었어요");
-        } else if (routineName === growthRoutines[2]) {
-          setPopupImage(require("../../assets/images/growpopup3.png"));
-          setPopupTitle("피어나는 꽃봉오리");
-          setPopupMessage("꽃이 맺히며 기대를 품고 있어요!\n정성과 열정이 아름답게 피어나려 해요");
-        } else if (routineName === growthRoutines[3]) {
-          setPopupImage(require("../../assets/images/growpopup4.png"));
-          setPopupTitle("진실한 성취의 튤립");
-          setPopupMessage("드디어 활짝 피어난 결실이에요!\n당신의 행동이 찬란한 성취로 이어졌어요");
-        }
-        setPopupVisible(true);
+        useNativeDriver: true,
+      }).start();
+    });
+  } else {
+    setPrePopupVisible(false);
+    if (nextPopupIndex !== null) {
+      const routineName = growthRoutines[nextPopupIndex];
+      if (routineName.includes("1단계")) {
+        setPopupImage(require("../../assets/images/growpopup1.png"));
+        setPopupTitle("뿌리내린 새싹");
+        setPopupMessage("처음으로 싹을 틔운 순간이에요!\n포기하지 않은 의지가 빛나고 있어요");
+      } else if (routineName.includes("2단계")) {
+        setPopupImage(require("../../assets/images/growpopup2.png"));
+        setPopupTitle("흔들리지 않는 줄기");
+        setPopupMessage("단단히 뿌리내리고 서 있는 순간이에요!\n흔들림 없는 노력이 든든한 힘이 되었어요");
+      } else if (routineName.includes("3단계")) {
+        setPopupImage(require("../../assets/images/growpopup3.png"));
+        setPopupTitle("피어나는 꽃봉오리");
+        setPopupMessage("꽃이 맺히며 기대를 품고 있어요!\n정성과 열정이 아름답게 피어나려 해요");
+      } else if (routineName.includes("4단계")) {
+        setPopupImage(require("../../assets/images/growpopup4.png"));
+        setPopupTitle("진실한 성취의 튤립");
+        setPopupMessage("드디어 활짝 피어난 결실이에요!\n당신의 행동이 찬란한 성취로 이어졌어요");
       }
+      setPopupVisible(true);
     }
-  };
+  }
+};
+
+
 
 
   return (
@@ -201,7 +243,7 @@ const allRoutines = [...growthRoutines, ...serverRoutines.map(r => r.routine)];
             <Text style={styles.text15}>1234 개</Text>
           </View>
         </View>
-        <Pressable onPress={() => router.push("/login")} hitSlop={20} style={{zIndex: 10}}>
+        <Pressable onPress={() => router.push("/login")} hitSlop={20} style={{top : 35, left : 340, position: "absolute", zIndex: 10}}>
           <Image style={styles.item22}  source={require("../../assets/images/icon-menu.png")} resizeMode="contain" />
         </Pressable>
         <ScrollView style={{ marginTop: 58, marginHorizontal: 24, height: 400 }}>
@@ -339,10 +381,7 @@ const styles = StyleSheet.create({
     item22: {
       position: "absolute",
     		width: 44,
-    		height: 44,
-        left: 340,
-        top: -266
-        
+    		height: 44,        
   	},
   	view3: {
     		justifyContent: "center",
