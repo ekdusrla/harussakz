@@ -1,17 +1,17 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 
 export default function Deco() {
+  const router = useRouter();
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
+  const introOpacity = useRef(new Animated.Value(1)).current;
+  const webviewRef = useRef<WebView>(null);
 
-    const router = useRouter();
-    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
-
-    const webviewRef = useRef<WebView>(null);
-
-    useEffect(() => {
-    // Deco 페이지 진입 시 Unity 씬 변경
+  // ✅ Unity 씬 전환
+  useEffect(() => {
     const timer = setTimeout(() => {
       if (webviewRef.current) {
         webviewRef.current.injectJavaScript(`
@@ -21,58 +21,109 @@ export default function Deco() {
           true;
         `);
       }
-    }, 2000); // Unity 로드 시간 확보
-
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
-    return(
-            <View style={{ flex: 1 }}>
-                    <View style={{ flex: 1 }}>
-                  <WebView source={{ uri: "https://harussak-unity-to-webgl.netlify.app/" }} // Unity 빌드한 주소 
-                  style={{ flex: 1 }} 
-                  allowsInlineMediaPlayback javaScriptEnabled domStorageEnabled />
-                </View>
-              <Pressable
-                style={styles.iconBack}
-                onPress={() => router.back()}
-              >
-                <Image
-                  style={styles.icon}
-                  resizeMode="contain"
-                  source={require("../assets/images/icon-back.png")}
-                />
-              </Pressable>
-              <View style={[styles.view2, styles.viewFlexBox2]}>
-                <Image
-                  style={styles.item2}
-                  width={20}
-                  height={14}
-                  resizeMode="contain"
-                  source={require("../assets/images/icon-seed.png")}
-                />
-                <View style={[styles.view3, styles.viewFlexBox2]}>
-                  <Text style={styles.text15}>1234 개</Text>
-                </View>
-              </View>
-              <View style={{ position: "absolute" }}>
-                <Pressable onPress={() => setIsTooltipVisible(p => !p)} style={styles.iconGridCalendar}>
-                  <Image style={styles.item} width={28} height={28} source={require("../assets/images/icon-question.png")} resizeMode="contain" />
-                </Pressable>
-                {isTooltipVisible && <Image source={require("../assets/images/questionbubble-deco.png")} style={styles.tooltipImage} resizeMode="contain" />}
-              </View>
-              <Pressable
-                style={styles.iconshop}
-                onPress={() => router.push("/shop")}
-              >
-                <Image
-                  style={styles.icon1}
-                  resizeMode="contain"
-                  source={require("../assets/images/icon-shop.png")}
-                />
-              </Pressable>
-            </View>  
-    )
+  // ✅ 5초 동안 인트로 표시
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.timing(introOpacity, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => setShowIntro(false));
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* ✅ WebView (Unity) */}
+      <View style={{ flex: 1 }}>
+        <WebView
+          ref={webviewRef}
+          source={{ uri: "https://harussak-unity-to-webgl.netlify.app/" }}
+          style={{ flex: 1 }}
+          allowsInlineMediaPlayback
+          javaScriptEnabled
+          domStorageEnabled
+        />
+      </View>
+
+      {/* ✅ 로딩 인트로 화면 */}
+      {showIntro && (
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              backgroundColor: "#fff",
+              justifyContent: "center",
+              alignItems: "center",
+              opacity: introOpacity,
+              zIndex: 20,
+            },
+          ]}
+        >
+          <Image
+            source={require("../assets/images/loading.gif")}
+            style={{ width: 140, height: 140 }}
+            resizeMode="contain"
+          />
+          <Text style={{ fontSize: 18, color: "#26282c", marginTop: 10, fontFamily:"NanumSquareNeo-Bd", fontWeight:"600" }}>꾸미기 공간 불러오는 중...</Text>
+        </Animated.View>
+      )}
+
+      {/* ✅ 기존 디자인 유지 */}
+      <Pressable style={styles.iconBack} onPress={() => router.back()}>
+        <Image
+          style={styles.icon}
+          resizeMode="contain"
+          source={require("../assets/images/icon-back.png")}
+        />
+      </Pressable>
+
+      <View style={[styles.view2, styles.viewFlexBox2]}>
+        <Image
+          style={styles.item2}
+          width={20}
+          height={14}
+          resizeMode="contain"
+          source={require("../assets/images/icon-seed.png")}
+        />
+        <View style={[styles.view3, styles.viewFlexBox2]}>
+          <Text style={styles.text15}>1234 개</Text>
+        </View>
+      </View>
+
+      <View style={{ position: "absolute" }}>
+        <Pressable onPress={() => setIsTooltipVisible(p => !p)} style={styles.iconGridCalendar}>
+          <Image
+            style={styles.item}
+            width={28}
+            height={28}
+            source={require("../assets/images/icon-question.png")}
+            resizeMode="contain"
+          />
+        </Pressable>
+        {isTooltipVisible && (
+          <Image
+            source={require("../assets/images/questionbubble-deco.png")}
+            style={styles.tooltipImage}
+            resizeMode="contain"
+          />
+        )}
+      </View>
+
+      <Pressable style={styles.iconshop} onPress={() => router.push("/shop")}>
+        <Image
+          style={styles.icon1}
+          resizeMode="contain"
+          source={require("../assets/images/icon-shop.png")}
+        />
+      </Pressable>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
