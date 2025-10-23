@@ -11,7 +11,11 @@ export default function Home() {
 
   const [serverRoutines, setServerRoutines] = useState<{ id: number; routine: string; completed: boolean }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const opacity = useRef(new Animated.Value(0)).current;
+  const [showIntro, setShowIntro] = useState(true);
+
+  // ✅ 인트로 & 말풍선 opacity 분리
+  const introOpacity = useRef(new Animated.Value(1)).current;
+  const bubbleOpacity = useRef(new Animated.Value(0)).current;
 
   const positions = [
     { top: -640, left: 60 },
@@ -23,17 +27,30 @@ export default function Home() {
     require("../../assets/images/homebubble-good.png"),
   ];
 
+  // ✅ 인트로 화면 20초 후 사라지기
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.timing(introOpacity, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => setShowIntro(false));
+    }, 20000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ✅ 말풍선 애니메이션 (인트로와 독립적으로 작동)
   useEffect(() => {
     const showImage = () => {
-      Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+      Animated.timing(bubbleOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
       setCurrentIndex((prev) => (prev === 0 ? 1 : 0));
       setTimeout(() => {
-        Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }).start();
+        Animated.timing(bubbleOpacity, { toValue: 0, duration: 500, useNativeDriver: true }).start();
       }, 5000);
     };
 
-    const initialTimeout = setTimeout(showImage, 15000);
-    const interval = setInterval(showImage, 10000);
+    const initialTimeout = setTimeout(showImage, 30000); // 첫 말풍선은 30초 후
+    const interval = setInterval(showImage, 10000); // 이후 10초 간격 반복
 
     return () => {
       clearTimeout(initialTimeout);
@@ -41,7 +58,7 @@ export default function Home() {
     };
   }, []);
 
-  // 서버에서 루틴 가져오기
+  // ✅ 루틴 불러오기
   const fetchServerRoutines = async () => {
     if (!token) return;
     try {
@@ -56,7 +73,6 @@ export default function Home() {
     }
   };
 
-  // 화면이 포커스될 때마다 서버 호출
   useFocusEffect(
     useCallback(() => {
       fetchServerRoutines();
@@ -67,22 +83,41 @@ export default function Home() {
   const completedRoutines = serverRoutines.filter((r) => r.completed).length;
   const remainingRoutines = totalTodayRoutines - completedRoutines;
 
-  // ✅ deco 버튼 클릭 시
-  const goToDeco = () => {
-    // React Native 쪽 페이지 전환
-    router.push("/deco");
-  };
+  const goToDeco = () => router.push("/deco");
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
-        <WebView source={{ uri: "https://harussak-unity-to-webgl.netlify.app/" }} // Unity 빌드한 주소 
-        style={{ flex: 1 }} 
-        allowsInlineMediaPlayback javaScriptEnabled domStorageEnabled />
-      </View>
-  <View>
-    {/* 이제 나머지 UI 요소들은 그대로 */}
-        <View style={[styles.view2, styles.viewFlexBox2,]}>
+<View style={{ flex: 1 }}>
+    {/* ✅ WebView는 항상 백그라운드에서 로드 */}
+    <WebView
+      source={{ uri: "https://harussak-unity-to-webgl.netlify.app/" }}
+      style={{ flex: 1 }}
+      allowsInlineMediaPlayback
+      javaScriptEnabled
+      domStorageEnabled
+    />
+
+    {/* ✅ 인트로 화면: 화면 전체를 덮음 */}
+    {showIntro && (
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill, // 👈 화면 전체 덮기
+          styles.introContainer,
+          { opacity: introOpacity, zIndex: 999 },
+        ]}
+        pointerEvents="auto" // 인트로일 때는 클릭 막기
+      >
+        <Image
+          source={require("../../assets/images/loading.gif")}
+          style={styles.background}
+          resizeMode="contain"
+        />
+        <Text style={styles.introText}>테라리움 준비 중...</Text>
+      </Animated.View>
+    )}
+
+      {/* ✅ 상단 및 하단 UI */}
+      <View>
+        <View style={[styles.view2, styles.viewFlexBox2]}>
           <Image
             style={styles.item2}
             width={20}
@@ -94,48 +129,50 @@ export default function Home() {
             <Text style={styles.text15}>1234 개</Text>
           </View>
         </View>
+
+        {/* 메뉴 버튼 */}
         <Pressable
-        onPress={() => router.push("/login")} hitSlop={10}
-        style={[
-            styles.itemm,
-            { zIndex: 10 },
-        ]}
+          onPress={() => router.push("/login")}
+          hitSlop={10}
+          style={[styles.itemm, { zIndex: 10 }]}
         >
-        <Image
+          <Image
             source={require("../../assets/images/icon-menu.png")}
             resizeMode="contain"
             style={{ width: 44, height: 44 }}
-        />
+          />
         </Pressable>
+
+        {/* 데코 버튼 */}
         <Pressable
-        onPress={goToDeco} hitSlop={10}
-        style={[
-            styles.item,
-            { zIndex: 10 },
-        ]}
+          onPress={goToDeco}
+          hitSlop={10}
+          style={[styles.item, { zIndex: 10 }]}
         >
-        <Image
+          <Image
             source={require("../../assets/images/icon-deco.png")}
             resizeMode="contain"
             style={{ width: 32, height: 32 }}
-        />
+          />
         </Pressable>
-          {(
-            <Animated.Image
-              source={images[currentIndex]}
-              style={{
-                position: "absolute",
-                top: positions[currentIndex].top,
-                left: positions[currentIndex].left,
-                width: 80,
-                height: 80,
-                resizeMode: "contain",
-                zIndex: 50,
-                opacity: opacity, // opacity 애니메이션 적용
-              }}
-            />
-          )}
-          <ImageBackground
+
+        {/* ✅ 말풍선 애니메이션 */}
+        <Animated.Image
+          source={images[currentIndex]}
+          style={{
+            position: "absolute",
+            top: positions[currentIndex].top,
+            left: positions[currentIndex].left,
+            width: 80,
+            height: 80,
+            resizeMode: "contain",
+            zIndex: 50,
+            opacity: bubbleOpacity,
+          }}
+        />
+
+        {/* 하단 루틴 정보 */}
+        <ImageBackground
           source={require("../../assets/images/homeborder.png")}
           style={{
             position: "absolute",
@@ -148,10 +185,10 @@ export default function Home() {
         >
           <Text style={styles.text1}>남은 루틴 : {remainingRoutines}개</Text>
         </ImageBackground>
-        </View>    
+      </View>
     </View>
   );
-}
+} 
 
 
 const styles = StyleSheet.create({
@@ -218,5 +255,23 @@ const styles = StyleSheet.create({
         left : 340,
         top : -770
   	},
+      introContainer: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  background: {
+    width: 140,
+    height: 140,
+    top : -20
+  },
+  introText: {
+    fontSize: 20,
+    color: "#333",
+    fontWeight: "600",
+    fontFamily: "NanumSquareNeo-Bd"
+
+  },
     
   })
