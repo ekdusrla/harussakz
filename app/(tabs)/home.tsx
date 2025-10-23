@@ -32,10 +32,10 @@ export default function Home() {
     const timer = setTimeout(() => {
       Animated.timing(introOpacity, {
         toValue: 0,
-        duration: 1000,
+        duration: 300,
         useNativeDriver: true,
       }).start(() => setShowIntro(false));
-    }, 20000);
+    }, 10000);
     return () => clearTimeout(timer);
   }, []);
 
