@@ -8,24 +8,18 @@ export default function Deco() {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
   const introOpacity = useRef(new Animated.Value(1)).current;
+
+  // WebView ref
   const webviewRef = useRef<WebView>(null);
 
-  // ✅ Unity 씬 전환
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (webviewRef.current) {
-        webviewRef.current.injectJavaScript(`
-          if (typeof unityInstance !== 'undefined') {
-            unityInstance.SendMessage('SceneController', 'ChangeScene', 'DecoScene');
-          }
-          true;
-        `);
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+  // ✅ postMessage로 Unity에 씬 전환 명령 보내는 함수
+  const goToDecoScene = () => {
+    if (webviewRef.current) {
+      webviewRef.current.postMessage("goToPlacement"); // JSLib에서 수신
+    }
+  };
 
-  // ✅ 5초 동안 인트로 표시
+  // ✅ 12초 동안 인트로 표시
   useEffect(() => {
     const timer = setTimeout(() => {
       Animated.timing(introOpacity, {
@@ -33,23 +27,32 @@ export default function Deco() {
         duration: 1000,
         useNativeDriver: true,
       }).start(() => setShowIntro(false));
-    }, 10000);
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ✅ WebView 로딩 끝나면 자동으로 씬 전환
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      goToDecoScene();
+    }, 2000); // 2초 후 Unity 로드 가정
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <View style={{ flex: 1 }}>
       {/* ✅ WebView (Unity) */}
-      <View style={{ flex: 1 }}>
-        <WebView
-          ref={webviewRef}
-          source={{ uri: "https://harussak-unity-to-webgl.netlify.app/" }}
-          style={{ flex: 1 }}
-          allowsInlineMediaPlayback
-          javaScriptEnabled
-          domStorageEnabled
-        />
-      </View>
+      <WebView
+        ref={webviewRef}
+        source={{ uri: "https://harussak-unity-to-webgl.netlify.app/" }}
+        onMessage={(event) => {
+          console.log("Unity에서 온 메시지:", event.nativeEvent.data);
+        }}
+        style={{ flex: 1 }}
+        allowsInlineMediaPlayback
+        javaScriptEnabled
+        domStorageEnabled
+      />
 
       {/* ✅ 로딩 인트로 화면 */}
       {showIntro && (
@@ -129,7 +132,7 @@ export default function Deco() {
 const styles = StyleSheet.create({
     iconBack: {
         position: "absolute",
-        top: 36,
+        top: 44,
         left: 20,
         zIndex: 10,
   },
@@ -148,7 +151,7 @@ const styles = StyleSheet.create({
         height: 40,
     },
         view2: {
-        top: 34,
+        top: 40,
         left: 60, // 화면 왼쪽에서 약간 띄우기
         position: "absolute",
         zIndex: 10, // 최상단으로
@@ -191,14 +194,14 @@ const styles = StyleSheet.create({
         color: "#26282c",
         fontFamily: "NanumSquareNeo-Bd",
         },
-        iconGridCalendar: { left: 160, width: 32, top: 36, height: 32 },
+        iconGridCalendar: { left: 160, width: 32, top: 40, height: 32 },
   item: {
     		width: 20,
     		height: 14
   	},
     tooltipImage: {
     position: "absolute", // 절대 위치
-    top: 68,              // 아이콘 바로 아래
+    top: 72,              // 아이콘 바로 아래
     left: 160,            // 아이콘 기준 위치 (필요 시 조정)
     width: 160,           // 말풍선 이미지 크기
     height: 60,           // 말풍선 이미지 높이

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import GraphemeSplitter from "grapheme-splitter";
 import { useEffect, useState } from "react";
 import { Alert, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Calendar } from "react-native-calendars";
@@ -22,11 +23,18 @@ export default function GenerateRoutine3() {
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const emoji = selectedEmoji ? JSON.parse(selectedEmoji)[0] : "🌱";
+const splitter = new GraphemeSplitter();
+const [emoji, setEmoji] = useState("🌱");
 
-  useEffect(() => {
+useEffect(() => {
   if (routineText && routineText !== "나의 루틴 만들기") {
-    setRoutine(routineText.slice(2));
+    const graphemes = splitter.splitGraphemes(routineText);
+    setEmoji(graphemes[0]);               // 첫 글자 이모지
+    setRoutine(graphemes.slice(1).join("")); // 나머지 루틴 글씨
+  } else if (selectedEmoji) {
+    setEmoji(JSON.parse(selectedEmoji)[0]);
+  } else {
+    setEmoji("🌱");
   }
 
   const loadFlowerId = async () => {
@@ -40,7 +48,8 @@ export default function GenerateRoutine3() {
     }
   };
   loadFlowerId();
-}, [routineText, paramFlowerId]);
+}, [routineText, selectedEmoji, paramFlowerId]);
+
 
   const isConfirmEnabled =
     routine.trim() !== "" && period.trim() !== "" && selectedDays.length > 0;

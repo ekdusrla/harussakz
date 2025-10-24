@@ -85,6 +85,25 @@ export default function Home() {
 
   const goToDeco = () => router.push("/deco");
 
+  const webviewRef = useRef<WebView>(null);
+
+useEffect(() => {
+  // 홈 씬으로 전환
+  const timer = setTimeout(() => {
+    if (webviewRef.current) {
+      webviewRef.current.injectJavaScript(`
+        if (typeof unityInstance !== 'undefined') {
+          unityInstance.SendMessage('SceneController', 'ChangeScene', 'HomeScene');
+        }
+        true;
+      `);
+    }
+  }, 2000); // 2초 정도 기다렸다 씬 전환
+
+  return () => clearTimeout(timer);
+}, []);
+
+
   return (
 <View style={{ flex: 1 }}>
     {/* ✅ WebView는 항상 백그라운드에서 로드 */}
