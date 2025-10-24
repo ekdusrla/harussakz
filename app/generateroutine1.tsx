@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../context/AuthContext";
 
 const SERVER_IP = "http://3.37.215.53:8080"; 
@@ -53,6 +53,13 @@ export default function GenerateRoutine1() {
   return (
     <View style={styles.safeareaview}>
       <View style={[styles.view, styles.viewBg]}>
+        <Pressable style={styles.iconBack} onPress={() => router.back()} hitSlop={10}>
+              <Image
+                style={styles.icon}
+                resizeMode="contain"
+                source={require("../assets/images/icon-back.png")}
+              />
+            </Pressable>
         <Text style={[styles.text, styles.textTypo]}>
           지금 감정을 적어주세요{"\n"}변화의 시작이 될 거에요
         </Text>
@@ -236,8 +243,9 @@ const styles = StyleSheet.create({
         fontFamily: "Pretendard-Regular",
     },
         iconBack: {
-            top: 0,
-            width: 55
+            top: 12,
+            width: 55,
+            zIndex:10
     },
         icon: {
         top: 36,
@@ -245,7 +253,6 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
         position: "absolute",
-        overflow: "hidden"
     },
         wrapPosition: {
             height: 60,
