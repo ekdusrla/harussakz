@@ -67,35 +67,63 @@ export default function CultivateDetails() {
       return;
     }
 
-	const weekMap = ["일", "월", "화", "수", "목", "금", "토"];
-
-    // 서버 카드
-    const fetchCard = async () => {
-      if (!token) return;
-      try {
-        const res = await fetch("http://3.37.215.53:8080/cultivations/user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data: any[] = await res.json();
-        const selected = data.find(d => d.id === Number(fromServerId));
-        if (selected) {
-			setCardData({
-			...selected,
-			emoji: selected.emoji && selected.emoji !== "?" ? selected.emoji : "🌱",
-			level: selected.level ?? 0,
-			routineTitle: selected.routineTitle || selected.title || "루틴 이름 없음",
-			startDate: selected.startDate || "2024.12.03",
-			endDate: selected.endDate || "2025.12.03",
-			repeatDays: selected.repeatDays
-				? selected.repeatDays.map((d: number | string) => weekMap[Number(d)]) // 숫자든 문자열이든 숫자로 변환
-				: ["월", "수"],
-			plantName: selected.plantName || "서버에서 넘어옴",
-			});
-        }
-      } catch (err) {
-        console.error(err);
-      }
+    const dayMap: Record<string, string> = {
+      SUN: "일",
+      MON: "월",
+      TUE: "화",
+      WED: "수",
+      THU: "목",
+      FRI: "금",
+      SAT: "토",
     };
+
+
+    const fetchCard = async () => {
+  if (!token) return;
+  try {
+    const res = await fetch("http://3.37.215.53:8080/cultivations/user", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data: any[] = await res.json();
+    const selected = data.find(d => d.id === Number(fromServerId));
+
+    if (selected) {
+      const dayMap: Record<string, string> = {
+        SUN: "일",
+        MON: "월",
+        TUE: "화",
+        WED: "수",
+        THU: "목",
+        FRI: "금",
+        SAT: "토",
+      };
+
+      // ✅ 요일 변환 후 순서 정렬
+      const orderedDays = ["월", "화", "수", "목", "금", "토", "일"];
+      const koreanDays = selected.routineRepeatDays
+        ?.map((day: string) => {
+          const normalized = day.slice(0, 3).toUpperCase(); // "MONDAY" → "MON"
+          return dayMap[normalized] || "";
+        })
+        .filter(Boolean)
+        .sort((a: string, b: string) => orderedDays.indexOf(a) - orderedDays.indexOf(b));
+
+      setCardData({
+        ...selected,
+        emoji: selected.emoji && selected.emoji !== "?" ? selected.emoji : "🌱",
+        level: selected.level ?? 0,
+        routineTitle: selected.routineTitle || selected.title || "루틴 이름 없음",
+        startDate: selected.startDate || "2024.12.03",
+        endDate: selected.endDate || "2025.12.03",
+        repeatDays: koreanDays?.length ? koreanDays : ["월", "수"],
+        // ✅ 식물 이름 → 씨앗 종류로 표시
+        plantName: selected.breed || "미지의 씨앗",
+      });
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
 
     fetchCard();
   }, [fromServerId, token, serverCardFlag, index, title]);
@@ -163,50 +191,47 @@ export default function CultivateDetails() {
 
 
   return (
-		<ImageBackground
-		source={require("../assets/images/cultivatebackground.png")} // ✅ 배경 고정
-		style={styles.viewBg}
-		resizeMode="cover"
-		>
-      <View>
-        {/* 중간 이미지 */}
-    <Image
-      source={
-        fromServerId
-          ? require("../assets/images/cloud.png") // 서버 카드일 때
-          : require("../assets/images/rainbow.png")  // 로컬 카드일 때
-      }
-		style={[{ position: "absolute" }, middleImageStyle]}
-      resizeMode="contain"
-    />
+            <ImageBackground
+            source={require("../assets/images/cultivatebackground.png")} // ✅ 배경 고정
+            style={styles.viewBg}
+            resizeMode="cover"
+            >
+              <View>
+                {/* 중간 이미지 */}
+            <Image
+              source={
+                fromServerId
+                  ? require("../assets/images/cloud.png") // 서버 카드일 때
+                  : require("../assets/images/rainbow.png")  // 로컬 카드일 때
+              }
+            style={[{ position: "absolute" }, middleImageStyle]}
+              resizeMode="contain"
+            />
+                {/* 상세 이미지 */}
+                <Image
+                  source={detailMap[level]}
+                  style={{
+                    position: "absolute",
+                    top: 212,
+                    width: 132,
+                    height: 132,
+                    left: "35%",
+                  }}
+                  resizeMode="contain"
+                />
 
-        {/* 상세 이미지 */}
-        <Image
-          source={detailMap[level]}
-          style={{
-            position: "absolute",
-            top: 212,
-            width: 132,
-            height: 132,
-            left: "35%",
-          }}
-          resizeMode="contain"
-        />
-
-        {/* 버블 이미지 */}
-        {showCenterImage && (
-  <Animated.Image
-    source={
-      fromServerId
-        ? require("../assets/images/bubble-soso.png") // 서버 카드일 때
-        : require("../assets/images/bubble-great.png") // 로컬 카드일 때
-    }
-    style={[styles.centerImage, { opacity: fadeAnim }]}
-    resizeMode="contain"
-  />
-)}
-
-
+                {/* 버블 이미지 */}
+                {showCenterImage && (
+          <Animated.Image
+            source={
+              fromServerId
+                ? require("../assets/images/bubble-soso.png") // 서버 카드일 때
+                : require("../assets/images/bubble-great.png") // 로컬 카드일 때
+            }
+            style={[styles.centerImage, { opacity: fadeAnim }]}
+            resizeMode="contain"
+          />
+        )}
         {/* 텍스트 */}
         <View style={styles.child} />
         <Text style={styles.text}>{cardData.routineTitle}</Text>

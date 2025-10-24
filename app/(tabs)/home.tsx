@@ -35,7 +35,7 @@ export default function Home() {
         duration: 300,
         useNativeDriver: true,
       }).start(() => setShowIntro(false));
-    }, 10000);
+    }, 20000);
     return () => clearTimeout(timer);
   }, []);
 
